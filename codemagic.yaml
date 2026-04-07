@@ -1,56 +1,22 @@
 workflows:
-  android-release:
-    name: Android Release Build
-    max_build_duration: 60
-    environment:
-      java: 21
-      vars:
-        PACKAGE_NAME: "com.levelon.app"
-      android_signing:
-        - levelon_keystore
-    scripts:
-      - name: Set Node version
-        script: |
-          nvm install 20
-          nvm use 20
-          node --version
-      - name: Install dependencies
-        script: npm install
-      - name: Build web
-        script: npm run build
-      - name: Sync Capacitor
-        script: npx cap sync android
-      - name: Build Android AAB
-        script: |
-          chmod +x android/gradlew
-          cd android
-          ./gradlew bundleRelease assembleRelease
-    artifacts:
-      - android/app/build/outputs/bundle/release/*.aab
-      - android/app/build/outputs/apk/release/*.apk
-    publishing:
-      email:
-        recipients:
-          - levelon.app@gmail.com
-        notify:
-          success: true
-          failure: true
-
   ios-release:
     name: iOS Release Build
-    max_build_duration: 60
+    max_build_duration: 90
+    instance_type: mac_mini_m2
     environment:
       xcode: latest
       cocoapods: default
+      node: 20
+      vars:
+        BUNDLE_ID: "com.levelon.app"
+        APP_STORE_CONNECT_ISSUER_ID: YOUR_ISSUER_ID         # ← ใส่จาก App Store Connect API
+        APP_STORE_CONNECT_KEY_IDENTIFIER: YOUR_KEY_ID       # ← ใส่จาก App Store Connect API
+        APP_STORE_CONNECT_PRIVATE_KEY: YOUR_PRIVATE_KEY     # ← ใส่เป็น Secret ใน Codemagic
+        APPLE_TEAM_ID: YOUR_TEAM_ID                         # ← ใส่ Team ID จาก developer.apple.com
       ios_signing:
-        distribution_type: development
+        distribution_type: app_store
         bundle_identifier: com.levelon.app
     scripts:
-      - name: Set Node version
-        script: |
-          nvm install 20
-          nvm use 20
-          node --version
       - name: Install dependencies
         script: npm install
       - name: Build web
@@ -65,7 +31,11 @@ workflows:
         script: |
           cd ios/App
           pod install
-      - name: Build iOS
+      - name: Set build number
+        script: |
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1))
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
+      - name: Build iOS Archive
         script: |
           xcodebuild \
             -workspace ios/App/App.xcworkspace \
@@ -73,6 +43,8 @@ workflows:
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
             -destination "generic/platform=iOS" \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             archive
       - name: Export IPA
         script: |
@@ -83,7 +55,14 @@ workflows:
             -exportPath ios/App/output
     artifacts:
       - ios/App/output/*.ipa
+      - /tmp/xcodebuild_logs/*.log
     publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true        # อัปโหลดขึ้น TestFlight อัตโนมัติ
+        # submit_to_app_store: true       # เปิดถ้าต้องการส่ง review เลย
       email:
         recipients:
           - levelon.app@gmail.com
