@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.levelon.app",
+      "sha256_cert_fingerprints": [
+        "B1:9F:F9:C2:4A:93:57:E9:E4:3F:60:DC:B8:8A:8A:E5:72:78:38:2A:49:29:1C:28:97:2C:A8:4A:C5:2F:EB:A5"
+      ]
+    }
+  }
+]

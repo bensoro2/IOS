@@ -1,0 +1,1 @@
+UPDATE public.funding_pool SET current_amount = 0, updated_at = now() WHERE is_active = true;

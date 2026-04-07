@@ -1,0 +1,1 @@
+UPDATE public.funding_pool SET current_amount = 10000000, updated_at = now() WHERE id = '1aaba3a7-79a4-414b-bf9b-2e9a28579397';

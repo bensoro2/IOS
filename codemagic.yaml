@@ -1,0 +1,92 @@
+workflows:
+  android-release:
+    name: Android Release Build
+    max_build_duration: 60
+    environment:
+      java: 21
+      vars:
+        PACKAGE_NAME: "com.levelon.app"
+      android_signing:
+        - levelon_keystore
+    scripts:
+      - name: Set Node version
+        script: |
+          nvm install 20
+          nvm use 20
+          node --version
+      - name: Install dependencies
+        script: npm install
+      - name: Build web
+        script: npm run build
+      - name: Sync Capacitor
+        script: npx cap sync android
+      - name: Build Android AAB
+        script: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew bundleRelease assembleRelease
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/apk/release/*.apk
+    publishing:
+      email:
+        recipients:
+          - levelon.app@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  ios-release:
+    name: iOS Release Build
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.levelon.app
+    scripts:
+      - name: Set Node version
+        script: |
+          nvm install 20
+          nvm use 20
+          node --version
+      - name: Install dependencies
+        script: npm install
+      - name: Build web
+        script: npm run build
+      - name: Add iOS platform
+        script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+          npx cap sync ios
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
+      - name: Build iOS
+        script: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath ios/App/App.xcarchive \
+            -destination "generic/platform=iOS" \
+            archive
+      - name: Export IPA
+        script: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath ios/App/App.xcarchive \
+            -exportOptionsPlist ios/App/ExportOptions.plist \
+            -exportPath ios/App/output
+    artifacts:
+      - ios/App/output/*.ipa
+    publishing:
+      email:
+        recipients:
+          - levelon.app@gmail.com
+        notify:
+          success: true
+          failure: true

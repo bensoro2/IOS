@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. All colors MUST be HSL. */
+
+@layer base {
+  /* Default/fallback - Dark Dandelion */
+  :root {
+    --radius: 0.5rem;
+  }
+
+  /* Default Theme (Purple Light) */
+  .default {
+    --background: 0 0% 100%;
+    --foreground: 260 30% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 260 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 30% 15%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 262 30% 96%;
+    --secondary-foreground: 262 83% 58%;
+
+    --muted: 262 20% 96%;
+    --muted-foreground: 260 10% 50%;
+
+    --accent: 262 30% 96%;
+    --accent-foreground: 262 83% 58%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 262 20% 90%;
+    --input: 262 20% 90%;
+    --ring: 262 83% 58%;
+
+    --sidebar-background: 262 30% 98%;
+    --sidebar-foreground: 260 30% 15%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 262 30% 96%;
+    --sidebar-accent-foreground: 262 83% 58%;
+    --sidebar-border: 262 20% 90%;
+    --sidebar-ring: 262 83% 58%;
+  }
+
+  /* Dark Dandelion Theme (Purple/Gold Dark) */
+  .dark-dandelion {
+    --background: 240 10% 8%;
+    --foreground: 45 90% 55%;
+
+    --card: 240 10% 12%;
+    --card-foreground: 45 90% 55%;
+
+    --popover: 240 10% 10%;
+    --popover-foreground: 45 90% 55%;
+
+    --primary: 45 90% 55%;
+    --primary-foreground: 240 10% 8%;
+
+    --secondary: 240 10% 18%;
+    --secondary-foreground: 45 90% 55%;
+
+    --muted: 240 10% 18%;
+    --muted-foreground: 45 30% 60%;
+
+    --accent: 240 10% 18%;
+    --accent-foreground: 45 90% 55%;
+
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 10% 20%;
+    --input: 240 10% 20%;
+    --ring: 45 90% 55%;
+
+    --sidebar-background: 240 10% 10%;
+    --sidebar-foreground: 45 90% 55%;
+    --sidebar-primary: 45 90% 55%;
+    --sidebar-primary-foreground: 240 10% 8%;
+    --sidebar-accent: 240 10% 18%;
+    --sidebar-accent-foreground: 45 90% 55%;
+    --sidebar-border: 240 10% 20%;
+    --sidebar-ring: 45 90% 55%;
+  }
+
+  /* Cloud Sky Theme (Light Blue) */
+  .cloud-sky {
+    --background: 200 40% 92%;
+    --foreground: 200 50% 20%;
+
+    --card: 200 30% 97%;
+    --card-foreground: 200 50% 20%;
+
+    --popover: 200 30% 97%;
+    --popover-foreground: 200 50% 20%;
+
+    --primary: 200 80% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 40% 85%;
+    --secondary-foreground: 200 80% 40%;
+
+    --muted: 200 35% 88%;
+    --muted-foreground: 200 20% 45%;
+
+    --accent: 200 40% 85%;
+    --accent-foreground: 200 80% 40%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 30% 82%;
+    --input: 200 30% 82%;
+    --ring: 200 80% 50%;
+
+    --sidebar-background: 200 40% 90%;
+    --sidebar-foreground: 200 50% 20%;
+    --sidebar-primary: 200 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 40% 85%;
+    --sidebar-accent-foreground: 200 80% 40%;
+    --sidebar-border: 200 30% 82%;
+    --sidebar-ring: 200 80% 50%;
+  }
+
+  /* Pink Silk Theme (Pink) */
+  .pink-silk {
+    --background: 340 45% 90%;
+    --foreground: 340 40% 20%;
+
+    --card: 340 35% 95%;
+    --card-foreground: 340 40% 20%;
+
+    --popover: 340 35% 95%;
+    --popover-foreground: 340 40% 20%;
+
+    --primary: 340 75% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 340 45% 85%;
+    --secondary-foreground: 340 75% 45%;
+
+    --muted: 340 40% 87%;
+    --muted-foreground: 340 20% 45%;
+
+    --accent: 340 45% 85%;
+    --accent-foreground: 340 75% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 340 35% 80%;
+    --input: 340 35% 80%;
+    --ring: 340 75% 55%;
+
+    --sidebar-background: 340 45% 88%;
+    --sidebar-foreground: 340 40% 20%;
+    --sidebar-primary: 340 75% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 340 45% 85%;
+    --sidebar-accent-foreground: 340 75% 45%;
+    --sidebar-border: 340 35% 80%;
+    --sidebar-ring: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  * {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+@keyframes swim-waves {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(20px); }
+}
+
+@keyframes swim-shimmer {
+  0%, 100% { opacity: 0.5; transform: translateX(-5%); }
+  50% { opacity: 1; transform: translateX(5%); }
+}
+
+@keyframes dive-bubble1 {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-8px); opacity: 0.15; }
+}
+
+@keyframes dive-bubble2 {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(-10px); opacity: 0.1; }
+}
+
+@keyframes dive-fish {
+  0% { left: -20px; }
+  100% { left: 100%; }
+}

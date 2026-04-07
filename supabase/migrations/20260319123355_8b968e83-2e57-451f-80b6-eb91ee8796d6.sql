@@ -1,0 +1,1 @@
+ALTER TABLE group_chat_members REPLICA IDENTITY FULL;

@@ -1,0 +1,1 @@
+DELETE FROM code_redemptions WHERE code_id = 'ef5ffe76-77cd-4308-9a42-01fa9b9b77b1' AND user_id = '3a9d9233-e94e-4a60-bf25-4da6b4404780';
