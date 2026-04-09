@@ -35,12 +35,22 @@ workflows:
 
       - name: Add iOS platform
         script: |
+          set -e
           rm -rf ios
           npx cap add ios
+          echo "=== ios/App contents ==="
+          ls -la ios/App/ || echo "ios/App directory not found"
+          if [ ! -f "ios/App/Podfile" ]; then
+            echo "ERROR: Podfile not created"
+            exit 1
+          fi
           npx cap copy ios
 
       - name: Install CocoaPods
         script: |
+          set -e
+          echo "=== Finding Podfile ==="
+          find . -name "Podfile" -not -path "*/node_modules/*"
           cd ios/App
           pod install
 
