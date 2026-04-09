@@ -16,6 +16,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.levelon.app
+        api_key_id: Codemagic
     scripts:
       - name: Set up keychain
         script: keychain initialize
