@@ -3,15 +3,14 @@ workflows:
     name: iOS Release Build
     max_build_duration: 90
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic
     environment:
       xcode: latest
       cocoapods: default
       node: 20
       vars:
         BUNDLE_ID: "com.levelon.app"
-        APP_STORE_CONNECT_ISSUER_ID: "611bfacc-07b5-4a30-ae99-a2ad0913f12b"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "D37H7HGKLX"
-        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
         APPLE_TEAM_ID: $APPLE_TEAM_ID
     scripts:
       - name: Set up keychain
@@ -21,9 +20,6 @@ workflows:
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
             --create
 
       - name: Add certs to keychain
@@ -49,10 +45,7 @@ workflows:
 
       - name: Set build number
         script: |
-          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY") + 1))
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1))
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
 
       - name: Build iOS Archive
@@ -82,9 +75,6 @@ workflows:
 
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
       email:
         recipients:
