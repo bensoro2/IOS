@@ -13,18 +13,17 @@ workflows:
         APP_STORE_CONNECT_KEY_IDENTIFIER: "D37H7HGKLX"
         APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
         APPLE_TEAM_ID: $APPLE_TEAM_ID
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.levelon.app
-        api_key_id: Codemagic
     scripts:
       - name: Set up keychain
         script: keychain initialize
 
-      - name: Fetch signing files (Automatic)
+      - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
             --create
 
       - name: Add certs to keychain
@@ -50,7 +49,10 @@ workflows:
 
       - name: Set build number
         script: |
-          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1))
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY") + 1))
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
 
       - name: Build iOS Archive
