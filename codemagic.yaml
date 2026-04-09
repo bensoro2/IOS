@@ -26,6 +26,9 @@ workflows:
       - name: Add certs to keychain
         script: keychain add-certificates
 
+      - name: Use provisioning profiles
+        script: xcode-project use-profiles
+
       - name: Install dependencies
         script: npm install
 
