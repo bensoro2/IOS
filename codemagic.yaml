@@ -9,10 +9,10 @@ workflows:
       node: 20
       vars:
         BUNDLE_ID: "com.levelon.app"
-        APP_STORE_CONNECT_ISSUER_ID: YOUR_ISSUER_ID         # ← ใส่จาก App Store Connect API
-        APP_STORE_CONNECT_KEY_IDENTIFIER: YOUR_KEY_ID       # ← ใส่จาก App Store Connect API
-        APP_STORE_CONNECT_PRIVATE_KEY: YOUR_PRIVATE_KEY     # ← ใส่เป็น Secret ใน Codemagic
-        APPLE_TEAM_ID: YOUR_TEAM_ID                         # ← ใส่ Team ID จาก developer.apple.com
+        APP_STORE_CONNECT_ISSUER_ID: "611bfacc-07b5-4a30-ae99-a2ad0913f12b"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "D37H7HGKLX"
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY  # ← ใส่ใน Codemagic Secrets
+        APPLE_TEAM_ID: $APPLE_TEAM_ID                                   # ← ใส่ใน Codemagic Secrets
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.levelon.app
