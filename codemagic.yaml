@@ -11,30 +11,47 @@ workflows:
         BUNDLE_ID: "com.levelon.app"
         APP_STORE_CONNECT_ISSUER_ID: "611bfacc-07b5-4a30-ae99-a2ad0913f12b"
         APP_STORE_CONNECT_KEY_IDENTIFIER: "D37H7HGKLX"
-        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY  # ← ใส่ใน Codemagic Secrets
-        APPLE_TEAM_ID: $APPLE_TEAM_ID                                   # ← ใส่ใน Codemagic Secrets
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
+        APPLE_TEAM_ID: $APPLE_TEAM_ID
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.levelon.app
     scripts:
+      - name: Set up keychain
+        script: keychain initialize
+
+      - name: Fetch signing files (Automatic)
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Add certs to keychain
+        script: keychain add-certificates
+
       - name: Install dependencies
         script: npm install
+
       - name: Build web
         script: npm run build
+
       - name: Add iOS platform
         script: |
           if [ ! -d "ios" ]; then
             npx cap add ios
           fi
           npx cap sync ios
+
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install
+
       - name: Set build number
         script: |
           BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1))
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
+
       - name: Build iOS Archive
         script: |
           xcodebuild \
@@ -43,9 +60,11 @@ workflows:
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
             -destination "generic/platform=iOS" \
+            -allowProvisioningUpdates \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             archive
+
       - name: Export IPA
         script: |
           xcodebuild \
@@ -53,16 +72,17 @@ workflows:
             -archivePath ios/App/App.xcarchive \
             -exportOptionsPlist ios/App/ExportOptions.plist \
             -exportPath ios/App/output
+
     artifacts:
       - ios/App/output/*.ipa
       - /tmp/xcodebuild_logs/*.log
+
     publishing:
       app_store_connect:
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true        # อัปโหลดขึ้น TestFlight อัตโนมัติ
-        # submit_to_app_store: true       # เปิดถ้าต้องการส่ง review เลย
+        submit_to_testflight: true
       email:
         recipients:
           - levelon.app@gmail.com
