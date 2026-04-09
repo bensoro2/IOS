@@ -8,7 +8,7 @@ workflows:
     environment:
       xcode: latest
       cocoapods: default
-      node: 20
+      node: 22
       vars:
         BUNDLE_ID: "com.levelon.app"
         APPLE_TEAM_ID: $APPLE_TEAM_ID
