@@ -35,10 +35,8 @@ workflows:
 
       - name: Add iOS platform
         script: |
-          if [ ! -f "ios/App/Podfile" ]; then
-            rm -rf ios
-            npx cap add ios
-          fi
+          rm -rf ios
+          npx cap add ios
           npx cap copy ios
 
       - name: Install CocoaPods
