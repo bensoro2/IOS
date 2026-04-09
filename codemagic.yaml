@@ -7,7 +7,6 @@ workflows:
       app_store_connect: Codemagic
     environment:
       xcode: latest
-      cocoapods: default
       node: 22
       vars:
         BUNDLE_ID: "com.levelon.app"
@@ -38,21 +37,7 @@ workflows:
           set -e
           rm -rf ios
           npx cap add ios
-          echo "=== ios/App contents ==="
-          ls -la ios/App/ || echo "ios/App directory not found"
-          if [ ! -f "ios/App/Podfile" ]; then
-            echo "ERROR: Podfile not created"
-            exit 1
-          fi
           npx cap copy ios
-
-      - name: Install CocoaPods
-        script: |
-          set -e
-          echo "=== Finding Podfile ==="
-          find . -name "Podfile" -not -path "*/node_modules/*"
-          cd ios/App
-          pod install
 
       - name: Set build number
         script: |
@@ -62,7 +47,7 @@ workflows:
       - name: Build iOS Archive
         script: |
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
