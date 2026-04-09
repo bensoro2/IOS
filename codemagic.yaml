@@ -26,9 +26,6 @@ workflows:
       - name: Add certs to keychain
         script: keychain add-certificates
 
-      - name: Use provisioning profiles
-        script: xcode-project use-profiles
-
       - name: Install dependencies
         script: npm install
 
@@ -41,6 +38,9 @@ workflows:
           rm -rf ios
           npx cap add ios
           npx cap copy ios
+
+      - name: Use provisioning profiles
+        script: xcode-project use-profiles
 
       - name: Set build number
         script: |
@@ -55,9 +55,6 @@ workflows:
             -configuration Release \
             -archivePath ios/App/App.xcarchive \
             -destination "generic/platform=iOS" \
-            -allowProvisioningUpdates \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             archive
 
       - name: Export IPA
