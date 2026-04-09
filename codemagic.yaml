@@ -18,11 +18,10 @@ workflows:
 
       - name: Fetch signing files
         script: |
-          CERT_KEY=$(openssl genrsa 2048)
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --certificate-key "$CERT_KEY"
+            --certificate-key "$CERTIFICATE_PRIVATE_KEY"
 
       - name: Add certs to keychain
         script: keychain add-certificates
