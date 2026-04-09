@@ -7,8 +7,6 @@ workflows:
       xcode: latest
       cocoapods: default
       node: 20
-      integrations:
-        app_store_connect: Codemagic
       vars:
         BUNDLE_ID: "com.levelon.app"
         APP_STORE_CONNECT_ISSUER_ID: "611bfacc-07b5-4a30-ae99-a2ad0913f12b"
