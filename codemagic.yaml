@@ -44,8 +44,7 @@ workflows:
 
       - name: Set build number
         script: |
-          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1))
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CM_BUILD_NUMBER" ios/App/App/Info.plist
 
       - name: Build IPA
         script: |
