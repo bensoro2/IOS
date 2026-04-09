@@ -44,7 +44,8 @@ workflows:
 
       - name: Set build number
         script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CM_BUILD_NUMBER" ios/App/App/Info.plist
+          BUILD_NUM=$(date +%Y%m%d%H%M)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUM" ios/App/App/Info.plist
 
       - name: Build IPA
         script: |
