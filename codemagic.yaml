@@ -35,7 +35,8 @@ workflows:
 
       - name: Add iOS platform
         script: |
-          if [ ! -d "ios" ]; then
+          if [ ! -f "ios/App/Podfile" ]; then
+            rm -rf ios
             npx cap add ios
           fi
           npx cap sync ios
