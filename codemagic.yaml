@@ -41,13 +41,23 @@ workflows:
 
       - name: Add custom URL scheme to Info.plist
         script: |
-          PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Editor" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.levelon.app" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string com.levelon.app" "$PLIST"
+          python3 - << 'EOF'
+          import plistlib
+          path = 'ios/App/App/Info.plist'
+          with open(path, 'rb') as f:
+              plist = plistlib.load(f)
+          scheme = 'com.levelon.app'
+          url_types = plist.get('CFBundleURLTypes', [])
+          for entry in url_types:
+              if scheme in entry.get('CFBundleURLSchemes', []):
+                  print('URL scheme already exists')
+                  exit(0)
+          url_types.append({'CFBundleTypeRole': 'Editor', 'CFBundleURLName': scheme, 'CFBundleURLSchemes': [scheme]})
+          plist['CFBundleURLTypes'] = url_types
+          with open(path, 'wb') as f:
+              plistlib.dump(plist, f)
+          print('URL scheme added successfully')
+          EOF
 
       - name: Use provisioning profiles
         script: xcode-project use-profiles
@@ -56,6 +66,13 @@ workflows:
         script: |
           BUILD_NUM=$(date +%Y%m%d%H%M)
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUM" ios/App/App/Info.plist
+
+      - name: Verify project
+        script: |
+          echo "=== ios/App contents ==="
+          ls ios/App/
+          echo "=== Schemes ==="
+          xcodebuild -list -project ios/App/App.xcodeproj 2>&1
 
       - name: Build IPA
         script: |
