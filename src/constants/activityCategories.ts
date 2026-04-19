@@ -48,6 +48,7 @@ export const ACTIVITY_CATEGORIES: ActivityCategory[] = [
       { id: "surfing", name: "เซิร์ฟ", names: { th: "เซิร์ฟ", en: "Surfing", ja: "サーフィン", zh: "冲浪", ko: "서핑", ru: "Сёрфинг" }, emoji: "🏄" },
       { id: "skiing", name: "สกี", names: { th: "สกี", en: "Skiing", ja: "スキー", zh: "滑雪", ko: "스키", ru: "Лыжи" }, emoji: "⛷️" },
       { id: "rugby", name: "รักบี้", names: { th: "รักบี้", en: "Rugby", ja: "ラグビー", zh: "橄榄球", ko: "럭비", ru: "Регби" }, emoji: "🏉" },
+      { id: "judo", name: "ยูโด", names: { th: "ยูโด", en: "Judo", ja: "柔道", zh: "柔道", ko: "유도", ru: "Дзюдо" }, emoji: "🥋" },
     ],
   },
   {
@@ -105,6 +106,8 @@ export const ACTIVITY_CATEGORIES: ActivityCategory[] = [
       { id: "language-learning", name: "เรียนภาษา", names: { th: "เรียนภาษา", en: "Language Learning", ja: "語学学習", zh: "学语言", ko: "어학", ru: "Изучение языков" }, emoji: "📝" },
       { id: "crafts", name: "งานฝีมือ / DIY", names: { th: "งานฝีมือ / DIY", en: "Crafts / DIY", ja: "ハンドメイド / DIY", zh: "手工 / DIY", ko: "공예 / DIY", ru: "Рукоделие / DIY" }, emoji: "🧵" },
       { id: "cafe-hopping", name: "คาเฟ่ฮอปปิ้ง", names: { th: "คาเฟ่ฮอปปิ้ง", en: "Café Hopping", ja: "カフェ巡り", zh: "咖啡厅打卡", ko: "카페 투어", ru: "Кафе-хоппинг" }, emoji: "☕" },
+      { id: "drinking", name: "ดื่ม", names: { th: "ดื่ม", en: "Drinking", ja: "飲み会", zh: "喝酒", ko: "음주", ru: "Выпивка" }, emoji: "🍻" },
+      { id: "party", name: "ปาร์ตี้", names: { th: "ปาร์ตี้", en: "Party", ja: "パーティー", zh: "派对", ko: "파티", ru: "Вечеринка" }, emoji: "🎉" },
     ],
   },
 ];

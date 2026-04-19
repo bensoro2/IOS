@@ -1,13 +1,11 @@
 import { useRef, useEffect, useState } from "react";
-import { Capacitor } from "@capacitor/core";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Heart, MessageCircle, Share2, Volume2, VolumeX, Trash2, Play, Flag } from "lucide-react";
+import { Heart, MessageCircle, Share2, Trash2, Play, Flag } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ReelCommentsSheet } from "./ReelCommentsSheet";
 import { ReportReelSheet } from "./ReportReelSheet";
 import { ReelShareSheet } from "./ReelShareSheet";
-import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -43,28 +41,23 @@ interface ReelCardProps {
   reel: Reel;
   isActive: boolean;
   isOwner: boolean;
-  volume: number;
-  onVolumeChange: (volume: number) => void;
   onLike: () => void;
   onDelete: () => void;
   onRefresh: () => void;
 }
 
-export const ReelCard = ({ 
-  reel, 
-  isActive, 
+export const ReelCard = ({
+  reel,
+  isActive,
   isOwner,
-  volume,
-  onVolumeChange,
-  onLike, 
+  onLike,
   onDelete,
-  onRefresh 
+  onRefresh
 }: ReelCardProps) => {
   const { t } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
@@ -92,7 +85,6 @@ export const ReelCard = ({
     lastTapRef.current = now;
 
     if (timeSinceLastTap < 300) {
-      // Double tap — ยกเลิก single tap แล้ว like + heart animation
       if (singleTapTimer.current) {
         clearTimeout(singleTapTimer.current);
         singleTapTimer.current = null;
@@ -103,7 +95,6 @@ export const ReelCard = ({
       return;
     }
 
-    // Single tap — รอ 300ms ก่อน ถ้าไม่มี tap 2 ค่อย play/pause
     singleTapTimer.current = setTimeout(() => {
       if (videoRef.current) {
         if (isPlaying) {
@@ -116,29 +107,6 @@ export const ReelCard = ({
       }
     }, 300);
   };
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (volume > 0) {
-      onVolumeChange(0);
-    } else {
-      onVolumeChange(100);
-    }
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    onVolumeChange(value[0]);
-    if (videoRef.current) {
-      videoRef.current.volume = value[0] / 100;
-    }
-  };
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.volume = volume / 100;
-      videoRef.current.muted = volume === 0;
-    }
-  }, [volume]);
 
   const handleUserClick = () => {
     navigate(`/user/${reel.user_id}`);
@@ -154,7 +122,6 @@ export const ReelCard = ({
         src={reel.video_url}
         className="h-full w-full object-contain"
         loop
-        muted={volume === 0}
         playsInline
         onClick={handleVideoClick}
       />
@@ -187,22 +154,22 @@ export const ReelCard = ({
       {/* Right Side Actions */}
       <div className="absolute right-4 bottom-32 flex flex-col items-center gap-4">
         {/* Like */}
-        <button 
+        <button
           onClick={onLike}
           className="flex flex-col items-center gap-1"
         >
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
             reel.is_liked ? 'bg-white/20' : 'bg-white/10'
           }`}>
-            <Heart 
-              className={`w-5 h-5 ${reel.is_liked ? 'text-red-500 fill-red-500' : 'text-white'}`} 
+            <Heart
+              className={`w-5 h-5 ${reel.is_liked ? 'text-red-500 fill-red-500' : 'text-white'}`}
             />
           </div>
           <span className="text-white text-xs font-medium">{reel.likes_count}</span>
         </button>
 
         {/* Comment */}
-        <button 
+        <button
           onClick={() => setShowComments(true)}
           className="flex flex-col items-center gap-1"
         >
@@ -213,7 +180,7 @@ export const ReelCard = ({
         </button>
 
         {/* Share */}
-        <button 
+        <button
           onClick={handleShare}
           className="flex flex-col items-center gap-1"
         >
@@ -224,7 +191,7 @@ export const ReelCard = ({
 
         {/* Report */}
         {!isOwner && (
-          <button 
+          <button
             onClick={() => setShowReport(true)}
             className="flex flex-col items-center gap-1"
           >
@@ -233,45 +200,9 @@ export const ReelCard = ({
             </div>
           </button>
         )}
-
-        {/* Volume Control */}
-        <div className="relative flex flex-col items-center">
-          {showVolumeSlider && (
-            <div 
-              className="absolute right-12 top-1/2 -translate-y-1/2 bg-black/80 rounded-lg px-3 py-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Slider
-                value={[volume]}
-                onValueChange={handleVolumeChange}
-                max={100}
-                step={1}
-                className="w-24"
-              />
-            </div>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (Capacitor.isNativePlatform()) {
-                toggleMute(e);
-              } else {
-                setShowVolumeSlider(!showVolumeSlider);
-              }
-            }}
-            onDoubleClick={!Capacitor.isNativePlatform() ? toggleMute : undefined}
-            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-          >
-            {volume === 0 ? (
-              <VolumeX className="w-5 h-5 text-white" />
-            ) : (
-              <Volume2 className="w-5 h-5 text-white" />
-            )}
-          </button>
-        </div>
       </div>
 
-      {/* Delete Button for Owner - positioned on the right */}
+      {/* Delete Button for Owner */}
       {isOwner && (
         <div className="absolute right-4 bottom-20">
           <AlertDialog>
@@ -301,7 +232,7 @@ export const ReelCard = ({
       {/* Bottom Info */}
       <div className="absolute left-4 right-20 bottom-20">
         {/* User Info */}
-        <div 
+        <div
           onClick={handleUserClick}
           className="flex items-center gap-3 mb-2 cursor-pointer"
         >
@@ -357,7 +288,7 @@ export const ReelCard = ({
         onCommentAdded={onRefresh}
       />
 
-      {/* Share Sheet — แยกออกเป็น ReelShareSheet.tsx */}
+      {/* Share Sheet */}
       <ReelShareSheet
         reelId={reel.id}
         description={reel.description}

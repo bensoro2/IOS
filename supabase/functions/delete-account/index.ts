@@ -50,8 +50,13 @@ serve(async (req) => {
     await supabase.from("blocks").delete().or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`);
 
     await supabase.from("user_reports").delete().or(`reporter_id.eq.${userId},reported_id.eq.${userId}`);
-    await supabase.from("user_code_redemptions").delete().eq("user_id", userId);
+    // user_code_redemptions uses redeemer_id/code_owner_id (not user_id)
+    await supabase.from("user_code_redemptions").delete().eq("redeemer_id", userId);
+    await supabase.from("user_code_redemptions").delete().eq("code_owner_id", userId);
     await supabase.from("code_redemptions").delete().eq("user_id", userId);
+    // NULL out created_by refs that have no CASCADE (prevents FK violation on auth.users delete)
+    await supabase.from("activity_group_chats").update({ created_by: null }).eq("created_by", userId);
+    await supabase.from("check_plus_codes").update({ created_by: null }).eq("created_by", userId);
     await supabase.from("user_premium").delete().eq("user_id", userId);
     await supabase.from("push_subscriptions").delete().eq("user_id", userId);
     await supabase.from("fcm_tokens").delete().eq("user_id", userId);

@@ -32,10 +32,6 @@ const Reels = () => {
   const [loading, setLoading] = useState(true);
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [globalVolume, setGlobalVolume] = useState(() => {
-    const saved = localStorage.getItem('reels-volume');
-    return saved ? parseInt(saved, 10) : 100;
-  });
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -214,11 +210,6 @@ const Reels = () => {
     // Update in database using RPC (bypasses RLS)
     supabase.rpc("increment_reel_views", { _reel_id: reel.id }).then(() => {});
   }, [currentIndex, reels.length]);
-
-  const handleVolumeChange = (newVolume: number) => {
-    setGlobalVolume(newVolume);
-    localStorage.setItem('reels-volume', newVolume.toString());
-  };
 
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
@@ -399,8 +390,6 @@ const Reels = () => {
             reel={reel}
             isActive={index === currentIndex}
             isOwner={user?.id === reel.user_id}
-            volume={globalVolume}
-            onVolumeChange={handleVolumeChange}
             onLike={() => handleLike(reel.id)}
             onDelete={() => handleDelete(reel.id)}
             onRefresh={() => fetchReels(user?.id, filterUserId)}

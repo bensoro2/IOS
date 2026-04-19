@@ -9,6 +9,7 @@ import { getDateLocale } from "@/lib/dateLocale";
 import { getLocalizedProvince } from "@/components/ProvinceSelector";
 import { EditActivityDialog } from "@/components/EditActivityDialog";
 import { useNavigate } from "react-router-dom";
+import { getSubCategoryById } from "@/constants/activityCategories";
 
 interface ActivityCardProps {
   id: string;
@@ -63,6 +64,7 @@ export const ActivityCard = ({
 }: ActivityCardProps) => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
+  const categoryData = category ? getSubCategoryById(category) : null;
   const formattedDate = startDate
     ? format(new Date(startDate), "d MMM yyyy, HH:mm", { locale: getDateLocale(language) })
     : null;
@@ -108,6 +110,15 @@ export const ActivityCard = ({
               </div>
             </button>
           <div className="flex items-center gap-2 shrink-0">
+            {categoryData && (
+              <span
+                className="text-2xl leading-none"
+                aria-label={categoryData.name}
+                title={categoryData.name}
+              >
+                {categoryData.emoji}
+              </span>
+            )}
             {isOwner && (
               <EditActivityDialog
                 activityId={id}

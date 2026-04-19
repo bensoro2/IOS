@@ -219,6 +219,7 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [showMenu, setShowMenu] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const reelIdInContent = message.content ? (message.content.match(REEL_URL_REGEX)?.[1] ?? null) : null;
 
@@ -268,7 +269,13 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
             ) : (
               <>
                 {message.media_type === "image" && message.media_url && (
-                  <img src={message.media_url} alt="Shared image" className="max-w-full rounded-lg mb-1" style={{ maxHeight: "200px" }} />
+                  <img
+                    src={message.media_url}
+                    alt="Shared image"
+                    className="max-w-full rounded-lg mb-1 cursor-pointer active:opacity-80"
+                    style={{ maxHeight: "200px" }}
+                    onClick={(e) => { e.stopPropagation(); setLightboxUrl(message.media_url!); }}
+                  />
                 )}
                 {message.media_type === "audio" && message.media_url && <AudioPlayer src={message.media_url} />}
                 {message.content && (
@@ -304,6 +311,21 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
           </p>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <img
+            src={lightboxUrl}
+            alt="Full size"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Action Menu (bottom sheet) */}
       {showMenu && (

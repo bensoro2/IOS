@@ -385,18 +385,12 @@ const DirectChat = () => {
 
    const handleBlockUser = async () => {
      if (!currentUserId || !odirectId) return;
-     
      setIsBlocking(true);
      try {
        const { error } = await supabase
          .from("blocks")
-         .insert({
-           blocker_id: currentUserId,
-           blocked_id: odirectId,
-         });
- 
+         .insert({ blocker_id: currentUserId, blocked_id: odirectId });
        if (error) throw error;
- 
        toast.success(t("directChat.blockSuccess").replace("{name}", otherUser?.display_name || t("common.unknownUser")));
        setIsBlockedByMe(true);
      } catch (error: any) {
@@ -406,6 +400,27 @@ const DirectChat = () => {
        } else {
          toast.error(t("common.error"));
        }
+     } finally {
+       setIsBlocking(false);
+       setShowBlockDialog(false);
+     }
+   };
+
+   const handleUnblockUser = async () => {
+     if (!currentUserId || !odirectId) return;
+     setIsBlocking(true);
+     try {
+       const { error } = await supabase
+         .from("blocks")
+         .delete()
+         .eq("blocker_id", currentUserId)
+         .eq("blocked_id", odirectId);
+       if (error) throw error;
+       toast.success(t("blockedUsers.unblockSuccess").replace("{name}", otherUser?.display_name || t("common.unknownUser")));
+       setIsBlockedByMe(false);
+     } catch (error) {
+       console.error("Error unblocking user:", error);
+       toast.error(t("common.error"));
      } finally {
        setIsBlocking(false);
        setShowBlockDialog(false);
@@ -621,11 +636,11 @@ const DirectChat = () => {
                 {t("directChat.reportUser")}
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
+                className={isBlockedByMe ? "" : "text-destructive focus:text-destructive"}
                 onClick={() => setShowBlockDialog(true)}
               >
                 <Ban className="w-4 h-4 mr-2" />
-                {t("directChat.blockUser")}
+                {isBlockedByMe ? t("userProfile.unblockUser") : t("directChat.blockUser")}
               </DropdownMenuItem>
            </DropdownMenuContent>
          </DropdownMenu>
@@ -675,37 +690,58 @@ const DirectChat = () => {
          />
        )}
        
-       {/* Block Confirmation Dialog */}
+       {/* Block / Unblock Confirmation Dialog */}
        <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
          <AlertDialogContent>
-           <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <UserX className="w-5 h-5 text-destructive" />
-                {t("directChat.blockConfirmTitle")} {otherUser?.display_name || t("common.user")}?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("userProfile.blockConfirmDesc1")}
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>{t("userProfile.blockItem1")}</li>
-                  <li>{t("userProfile.blockItem2")}</li>
-                  <li>{t("userProfile.blockItem3")}</li>
-                </ul>
-                <p className="mt-3">{t("userProfile.blockNote")}</p>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isBlocking}>{t("common.cancel")}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleBlockUser}
-                disabled={isBlocking}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                {isBlocking ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
-                {t("common.block")}
-              </AlertDialogAction>
-           </AlertDialogFooter>
+           {isBlockedByMe ? (
+             <>
+               <AlertDialogHeader>
+                 <AlertDialogTitle className="flex items-center gap-2">
+                   <Ban className="w-5 h-5" />
+                   {t("userProfile.unblockUser")} {otherUser?.display_name || t("common.user")}?
+                 </AlertDialogTitle>
+                 <AlertDialogDescription>
+                   {t("blockedUsers.unblock")} {otherUser?.display_name || t("common.user")}
+                 </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                 <AlertDialogCancel disabled={isBlocking}>{t("common.cancel")}</AlertDialogCancel>
+                 <AlertDialogAction onClick={handleUnblockUser} disabled={isBlocking}>
+                   {isBlocking ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                   {t("userProfile.unblockUser")}
+                 </AlertDialogAction>
+               </AlertDialogFooter>
+             </>
+           ) : (
+             <>
+               <AlertDialogHeader>
+                 <AlertDialogTitle className="flex items-center gap-2">
+                   <UserX className="w-5 h-5 text-destructive" />
+                   {t("directChat.blockConfirmTitle")} {otherUser?.display_name || t("common.user")}?
+                 </AlertDialogTitle>
+                 <AlertDialogDescription>
+                   {t("userProfile.blockConfirmDesc1")}
+                   <ul className="list-disc list-inside mt-2 space-y-1">
+                     <li>{t("userProfile.blockItem1")}</li>
+                     <li>{t("userProfile.blockItem2")}</li>
+                     <li>{t("userProfile.blockItem3")}</li>
+                   </ul>
+                   <p className="mt-3">{t("userProfile.blockNote")}</p>
+                 </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                 <AlertDialogCancel disabled={isBlocking}>{t("common.cancel")}</AlertDialogCancel>
+                 <AlertDialogAction
+                   onClick={handleBlockUser}
+                   disabled={isBlocking}
+                   className="bg-destructive hover:bg-destructive/90"
+                 >
+                   {isBlocking ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                   {t("common.block")}
+                 </AlertDialogAction>
+               </AlertDialogFooter>
+             </>
+           )}
          </AlertDialogContent>
        </AlertDialog>
        
