@@ -250,22 +250,24 @@ export const ReelCard = ({
               />
             </div>
           )}
-          {!Capacitor.isNativePlatform() && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (Capacitor.isNativePlatform()) {
+                toggleMute(e);
+              } else {
                 setShowVolumeSlider(!showVolumeSlider);
-              }}
-              onDoubleClick={toggleMute}
-              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-            >
-              {volume === 0 ? (
-                <VolumeX className="w-5 h-5 text-white" />
-              ) : (
-                <Volume2 className="w-5 h-5 text-white" />
-              )}
-            </button>
-          )}
+              }
+            }}
+            onDoubleClick={!Capacitor.isNativePlatform() ? toggleMute : undefined}
+            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+          >
+            {volume === 0 ? (
+              <VolumeX className="w-5 h-5 text-white" />
+            ) : (
+              <Volume2 className="w-5 h-5 text-white" />
+            )}
+          </button>
         </div>
       </div>
 

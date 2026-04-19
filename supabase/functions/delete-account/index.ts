@@ -41,7 +41,7 @@ serve(async (req) => {
     await supabase.from("direct_messages").delete().eq("receiver_id", userId);
 
     await supabase.from("group_chat_last_read").delete().eq("user_id", userId);
-    await supabase.from("group_chat_messages").delete().eq("sender_id", userId);
+    await supabase.from("group_chat_messages").delete().eq("user_id", userId);
     await supabase.from("kicked_members").delete().eq("user_id", userId);
     await supabase.from("join_requests").delete().eq("user_id", userId);
     await supabase.from("group_chat_members").delete().eq("user_id", userId);

@@ -34,7 +34,7 @@ const Reels = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [globalVolume, setGlobalVolume] = useState(() => {
     const saved = localStorage.getItem('reels-volume');
-    return saved ? parseInt(saved, 10) : 0;
+    return saved ? parseInt(saved, 10) : 100;
   });
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();

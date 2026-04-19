@@ -27,7 +27,7 @@ export const BottomNav = ({ onHomeClick, centerButton }: BottomNavProps) => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-2 py-2 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-2 pt-2 z-50 safe-bottom">
       <div className="flex items-center justify-around">
         <button
           onClick={handleHomeClick}

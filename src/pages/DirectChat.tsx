@@ -463,57 +463,58 @@ const DirectChat = () => {
     }
   };
 
-  const sendMediaMessage = async (file: Blob, type: "image" | "audio") => {
+  const sendMediaMessage = async (file: Blob | Blob[], type: "image" | "audio") => {
     if (!currentUserId || !odirectId) return;
 
+    const files = Array.isArray(file) ? file : [file];
     setIsSending(true);
 
-    const mediaUrl = await uploadMedia(file, type);
-    if (!mediaUrl) {
-      setIsSending(false);
-      return;
-    }
-
-    const optimisticMessage: Message = {
-      id: `temp-${Date.now()}`,
-      content: "",
-      user_id: currentUserId,
-      created_at: new Date().toISOString(),
-      user_display_name: t("common.you"),
-      user_avatar: undefined,
-      media_url: mediaUrl,
-      media_type: type,
-    };
-
-    setMessages((prev) => [...prev, optimisticMessage]);
-
     try {
-      const { data, error } = await supabase
-        .from("direct_messages")
-        .insert({
-          sender_id: currentUserId,
-          receiver_id: odirectId,
-          content: "",
-          media_url: mediaUrl,
-          media_type: type,
+      const urls = await Promise.all(files.map((f) => uploadMedia(f, type)));
+      const validUrls = urls.filter(Boolean) as string[];
+
+      await Promise.all(
+        validUrls.map(async (mediaUrl, i) => {
+          const optimisticMessage: Message = {
+            id: `temp-${Date.now()}-${i}`,
+            content: "",
+            user_id: currentUserId,
+            created_at: new Date().toISOString(),
+            user_display_name: t("common.you"),
+            user_avatar: undefined,
+            media_url: mediaUrl,
+            media_type: type,
+          };
+
+          setMessages((prev) => [...prev, optimisticMessage]);
+
+          const { data, error } = await supabase
+            .from("direct_messages")
+            .insert({
+              sender_id: currentUserId,
+              receiver_id: odirectId,
+              content: "",
+              media_url: mediaUrl,
+              media_type: type,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === optimisticMessage.id
+                  ? { ...msg, id: data.id, user_id: data.sender_id }
+                  : msg
+              )
+            );
+          }
         })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === optimisticMessage.id
-              ? { ...msg, id: data.id, user_id: data.sender_id }
-              : msg
-          )
-        );
-      }
+      );
     } catch (error) {
       console.error("Error sending media message:", error);
-      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
     } finally {
       setIsSending(false);
     }

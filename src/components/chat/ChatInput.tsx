@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ChatInputProps {
   onSendText: (text: string) => Promise<void>;
-  onSendMedia: (file: Blob, type: "image" | "audio") => Promise<void>;
+  onSendMedia: (file: Blob | Blob[], type: "image" | "audio") => Promise<void>;
   isSending: boolean;
   replyTo?: { id: string; preview: string } | null;
   onCancelReply?: () => void;
@@ -16,10 +16,10 @@ interface ChatInputProps {
 const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply }: ChatInputProps) => {
   const { t } = useLanguage();
   const [message, setMessage] = useState("");
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const {
     isRecording,
     recordingDuration,
@@ -43,30 +43,44 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      setSelectedFile(file);
+    const incoming = Array.from(e.target.files || []).filter((f) =>
+      f.type.startsWith("image/")
+    );
+    if (!incoming.length) return;
+
+    const files = incoming.slice(0, Math.max(0, 10 - selectedFiles.length));
+    if (!files.length) return;
+
+    setSelectedFiles((prev) => [...prev, ...files]);
+
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setPreviewImage(event.target?.result as string);
+        setPreviewImages((prev) => [...prev, event.target?.result as string]);
       };
       reader.readAsDataURL(file);
-    }
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSendImage = async () => {
-    if (!selectedFile || isSending) return;
-    await onSendMedia(selectedFile, "image");
-    setSelectedFile(null);
-    setPreviewImage(null);
+  const removeImage = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendImages = async () => {
+    if (!selectedFiles.length || isSending) return;
+    await onSendMedia(selectedFiles, "image");
+    setSelectedFiles([]);
+    setPreviewImages([]);
+    setMessage("");
   };
 
   const cancelImagePreview = () => {
-    setSelectedFile(null);
-    setPreviewImage(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setSelectedFiles([]);
+    setPreviewImages([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleMicPress = async () => {
@@ -85,23 +99,37 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
   };
 
   // Image preview mode
-  if (previewImage) {
+  if (previewImages.length > 0) {
     return (
       <div className="flex-shrink-0 px-4 py-3 bg-card border-t border-border">
-        <div className="relative inline-block mb-2">
-          <img
-            src={previewImage}
-            alt="Preview"
-            className="max-h-40 rounded-lg"
-          />
+        <div className="flex flex-wrap gap-2 mb-2">
+          {previewImages.map((src, index) => (
+            <div key={index} className="relative">
+              <img
+                src={src}
+                alt={`Preview ${index + 1}`}
+                className="h-24 w-24 object-cover rounded-lg"
+              />
+              <button
+                onClick={() => removeImage(index)}
+                className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {/* Add more button */}
           <button
-            onClick={cancelImagePreview}
-            className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-24 w-24 rounded-lg border-2 border-dashed border-muted-foreground/40 flex items-center justify-center text-muted-foreground hover:bg-muted"
           >
-            <X className="w-4 h-4" />
+            <Image className="w-6 h-6" />
           </button>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="icon" variant="ghost" onClick={cancelImagePreview} className="flex-shrink-0 text-destructive">
+            <X className="w-5 h-5" />
+          </Button>
           <Input
             placeholder={t("chat.addCaption")}
             value={message}
@@ -111,7 +139,7 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
           />
           <Button
             size="icon"
-            onClick={handleSendImage}
+            onClick={handleSendImages}
             disabled={isSending}
             className="flex-shrink-0"
           >
@@ -122,6 +150,14 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             )}
           </Button>
         </div>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          ref={fileInputRef}
+          onChange={handleImageSelect}
+          className="hidden"
+        />
       </div>
     );
   }
@@ -165,7 +201,6 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
   // Normal mode
   return (
     <div className="flex-shrink-0 bg-card border-t border-border">
-      {/* Reply preview */}
       {replyTo && (
         <div className="flex items-center gap-2 px-4 pt-2 pb-1">
           <Reply className="w-4 h-4 text-primary flex-shrink-0" />
@@ -175,58 +210,59 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
           </button>
         </div>
       )}
-    <div className="px-4 py-3">
-      <div className="flex items-center gap-2">
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleImageSelect}
-          className="hidden"
-        />
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isSending}
-          className="flex-shrink-0"
-        >
-          <Image className="w-5 h-5" />
-        </Button>
-        <Input
-          placeholder={t("chat.placeholder")}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="flex-1 bg-muted border-0"
-          disabled={isSending}
-        />
-        {message.trim() ? (
-          <Button
-            size="icon"
-            onClick={handleSendText}
-            disabled={!message.trim() || isSending}
-            className="flex-shrink-0"
-          >
-            {isSending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
-        ) : (
+      <div className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            ref={fileInputRef}
+            onChange={handleImageSelect}
+            className="hidden"
+          />
           <Button
             size="icon"
             variant="ghost"
-            onClick={handleMicPress}
+            onClick={() => fileInputRef.current?.click()}
             disabled={isSending}
             className="flex-shrink-0"
           >
-            <Mic className="w-5 h-5" />
+            <Image className="w-5 h-5" />
           </Button>
-        )}
+          <Input
+            placeholder={t("chat.placeholder")}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="flex-1 bg-muted border-0"
+            disabled={isSending}
+          />
+          {message.trim() ? (
+            <Button
+              size="icon"
+              onClick={handleSendText}
+              disabled={!message.trim() || isSending}
+              className="flex-shrink-0"
+            >
+              {isSending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handleMicPress}
+              disabled={isSending}
+              className="flex-shrink-0"
+            >
+              <Mic className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 };

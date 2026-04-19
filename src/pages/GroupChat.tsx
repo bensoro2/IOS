@@ -512,61 +512,58 @@ const GroupChat = () => {
     }
   };
 
-  const sendMediaMessage = async (file: Blob, type: "image" | "audio") => {
+  const sendMediaMessage = async (file: Blob | Blob[], type: "image" | "audio") => {
     if (!currentUserId || !id) return;
 
+    const files = Array.isArray(file) ? file : [file];
     setIsSending(true);
 
-    // Upload media first
-    const mediaUrl = await uploadMedia(file, type);
-    if (!mediaUrl) {
-      setIsSending(false);
-      return;
-    }
-
-    // Optimistic update
-    const optimisticMessage: Message = {
-      id: `temp-${Date.now()}`,
-      content: "",
-      user_id: currentUserId,
-      created_at: new Date().toISOString(),
-      user_display_name: t("common.you"),
-      user_avatar: undefined,
-      media_url: mediaUrl,
-      media_type: type,
-    };
-
-    setMessages((prev) => [...prev, optimisticMessage]);
-
     try {
-      const { data, error } = await supabase
-        .from("group_chat_messages")
-        .insert({
-          group_chat_id: id,
-          user_id: currentUserId,
-          content: "",
-          media_url: mediaUrl,
-          media_type: type,
+      const urls = await Promise.all(files.map((f) => uploadMedia(f, type)));
+      const validUrls = urls.filter(Boolean) as string[];
+
+      await Promise.all(
+        validUrls.map(async (mediaUrl, i) => {
+          const optimisticMessage: Message = {
+            id: `temp-${Date.now()}-${i}`,
+            content: "",
+            user_id: currentUserId,
+            created_at: new Date().toISOString(),
+            user_display_name: t("common.you"),
+            user_avatar: undefined,
+            media_url: mediaUrl,
+            media_type: type,
+          };
+
+          setMessages((prev) => [...prev, optimisticMessage]);
+
+          const { data, error } = await supabase
+            .from("group_chat_messages")
+            .insert({
+              group_chat_id: id,
+              user_id: currentUserId,
+              content: "",
+              media_url: mediaUrl,
+              media_type: type,
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === optimisticMessage.id
+                  ? { ...data, user_display_name: t("common.you"), user_avatar: undefined }
+                  : msg
+              )
+            );
+          }
         })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Replace optimistic message with real one
-      if (data) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === optimisticMessage.id
-              ? { ...data, user_display_name: t("common.you"), user_avatar: undefined }
-              : msg
-          )
-        );
-      }
+      );
     } catch (error) {
       console.error("Error sending media message:", error);
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
     } finally {
       setIsSending(false);
     }
