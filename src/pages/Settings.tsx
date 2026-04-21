@@ -346,7 +346,7 @@ const Settings = () => {
       navigate("/auth");
     } catch (error: any) {
       console.error("Error deleting account:", error);
-      toast.error(t("toast.deleteError"));
+      toast.error(error?.message || t("toast.deleteError"));
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);

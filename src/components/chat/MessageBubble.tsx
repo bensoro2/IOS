@@ -318,6 +318,12 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
           onClick={() => setLightboxUrl(null)}
         >
+          <button
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none z-10"
+            onClick={() => setLightboxUrl(null)}
+          >
+            ✕
+          </button>
           <img
             src={lightboxUrl}
             alt="Full size"

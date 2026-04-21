@@ -234,6 +234,7 @@ const translations: Record<string, Record<string, string>> = {
   "shop.createTitle": { th: "สร้างร้านค้า", en: "Create Shop", ja: "お店を作成", zh: "创建商店", ko: "상점 만들기", ru: "Создать магазин" },
   "shop.shopName": { th: "ชื่อร้านค้า", en: "Shop Name", ja: "店名", zh: "店铺名称", ko: "상점 이름", ru: "Название магазина" },
   "shop.shopNamePlaceholder": { th: "ชื่อร้านค้า...", en: "Shop name...", ja: "店名を入力...", zh: "店铺名称...", ko: "상점 이름...", ru: "Название..." },
+  "shop.descriptionPlaceholder": { th: "บอกรายละเอียดเพิ่มเติมเกี่ยวกับร้านค้า...", en: "Tell more about this shop...", ja: "お店の詳細を記入...", zh: "请描述店铺详情...", ko: "가게에 대해 자세히 알려주세요...", ru: "Расскажите подробнее о магазине..." },
   "shop.createSuccess": { th: "สร้างร้านค้าสำเร็จ!", en: "Shop created!", ja: "お店を作成しました！", zh: "商店已创建！", ko: "상점이 생성되었습니다!", ru: "Магазин создан!" },
   "shop.enterName": { th: "กรุณาใส่ชื่อร้านค้า", en: "Please enter shop name", ja: "店名を入力してください", zh: "请输入店铺名称", ko: "상점 이름을 입력하세요", ru: "Введите название" },
   "shop.contentUnsafe": { th: "เนื้อหาไม่ผ่านการตรวจสอบ", en: "Content did not pass review", ja: "コンテンツが審査に通りませんでした", zh: "内容未通过审核", ko: "콘텐츠가 검토를 통과하지 못했습니다", ru: "Контент не прошел проверку" },

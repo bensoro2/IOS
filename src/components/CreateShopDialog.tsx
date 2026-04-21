@@ -141,7 +141,7 @@
               <Label htmlFor="description" className="text-sm font-medium">{t("create.description")}</Label>
               <Textarea
                 id="description"
-                placeholder={t("create.descriptionPlaceholder")}
+                placeholder={t("shop.descriptionPlaceholder")}
                 className="min-h-[100px] resize-none"
                value={description}
                onChange={(e) => setDescription(e.target.value)}
