@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
   appName: "Levelon",
   webDir: "dist",
   ios: {
-    scrollEnabled: false,
     contentInset: "never",
   },
   plugins: {
