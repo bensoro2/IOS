@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BottomNav } from "@/components/BottomNav";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CreateActivityDialog } from "@/components/CreateActivityDialog";
+import { usePresence } from "@/hooks/usePresence";
 
 interface GroupChat {
   id: string;
@@ -48,12 +49,14 @@ const Messages = () => {
   const [directConversations, setDirectConversations] = useState<DirectConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDmLoading, setIsDmLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "group" ? "group" : "private";
   const userIdRef = useRef<string | null>(null);
   const initialLoadDone = useRef(false);
   const { t } = useLanguage();
+  const onlineUsers = usePresence(currentUserId);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -63,6 +66,7 @@ const Messages = () => {
         return;
       }
       userIdRef.current = user.id;
+      setCurrentUserId(user.id);
       fetchGroupChats(user.id);
       fetchDirectConversations(user.id);
     });
@@ -333,12 +337,17 @@ const Messages = () => {
                     className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
                     onClick={() => navigate(`/direct/${conv.other_user_id}`)}
                   >
-                    <Avatar className="w-12 h-12 flex-shrink-0">
-                      <AvatarImage src={conv.other_user_avatar || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {conv.other_user_name?.charAt(0) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative flex-shrink-0">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={conv.other_user_avatar || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {conv.other_user_name?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      {onlineUsers.has(conv.other_user_id) && (
+                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-background" />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">

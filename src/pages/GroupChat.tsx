@@ -447,14 +447,21 @@ const GroupChat = () => {
   const uploadMedia = async (file: Blob, type: "image" | "audio"): Promise<string | null> => {
     if (!currentUserId) return null;
 
-    const ext = type === "image" ? "jpg" : "webm";
+    let ext: string;
+    let contentType: string;
+    if (type === "image") {
+      ext = "jpg";
+      contentType = "image/jpeg";
+    } else {
+      contentType = file.type || "audio/mp4";
+      ext = contentType.includes("mp4") || contentType.includes("m4a") || contentType.includes("aac") ? "m4a" : "webm";
+    }
+
     const fileName = `${currentUserId}/${Date.now()}.${ext}`;
 
     const { data, error } = await supabase.storage
       .from(BUCKET_CHAT_MEDIA)
-      .upload(fileName, file, {
-        contentType: type === "image" ? "image/jpeg" : "audio/webm",
-      });
+      .upload(fileName, file, { contentType });
 
     if (error) {
       console.error("Error uploading media:", error);

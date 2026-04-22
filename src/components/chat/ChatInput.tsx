@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Send, Loader2, Mic, Image, X, Square, Reply } from "lucide-react";
 import { useAudioRecorder, formatDuration } from "@/hooks/useAudioRecorder";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "sonner";
 
 interface ChatInputProps {
   onSendText: (text: string) => Promise<void>;
@@ -92,8 +93,12 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
     } else {
       try {
         await startRecording();
-      } catch (error) {
-        console.error("Failed to start recording:", error);
+      } catch (error: any) {
+        if (error?.message === "PERMISSION_DENIED") {
+          toast.error("ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน กรุณาเปิดสิทธิ์ในการตั้งค่า");
+        } else {
+          toast.error("อุปกรณ์นี้ไม่รองรับการบันทึกเสียง");
+        }
       }
     }
   };

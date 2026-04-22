@@ -19,6 +19,7 @@ import { BUCKET_CHAT_MEDIA, CHAT_POLL_INTERVAL_MS, CHAT_POLL_MAX_MS, SCROLL_TO_B
  import { toast } from "sonner";
 import { ReportUserSheet } from "@/components/ReportUserSheet";
 import { useDmNotificationMute } from "@/hooks/useGroupNotificationMute";
+import { usePresence } from "@/hooks/usePresence";
  import {
    AlertDialog,
    AlertDialogAction,
@@ -66,6 +67,8 @@ const DirectChat = () => {
     const [isBlockedByMe, setIsBlockedByMe] = useState(false);
     const [showReportSheet, setShowReportSheet] = useState(false);
   const { muted: isDmMuted, toggle: toggleDmMute } = useDmNotificationMute(odirectId || "");
+  const onlineUsers = usePresence(currentUserId);
+  const isOtherUserOnline = otherUser ? onlineUsers.has(otherUser.id) : false;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = (instant = false) => {
@@ -362,14 +365,22 @@ const DirectChat = () => {
   const uploadMedia = async (file: Blob, type: "image" | "audio"): Promise<string | null> => {
     if (!currentUserId) return null;
 
-    const ext = type === "image" ? "jpg" : "webm";
+    let ext: string;
+    let contentType: string;
+    if (type === "image") {
+      ext = "jpg";
+      contentType = "image/jpeg";
+    } else {
+      // Use the blob's actual MIME type (audio/mp4 on iOS, audio/webm on Android)
+      contentType = file.type || "audio/mp4";
+      ext = contentType.includes("mp4") || contentType.includes("m4a") || contentType.includes("aac") ? "m4a" : "webm";
+    }
+
     const fileName = `dm/${currentUserId}/${Date.now()}.${ext}`;
 
     const { data, error } = await supabase.storage
       .from(BUCKET_CHAT_MEDIA)
-      .upload(fileName, file, {
-        contentType: type === "image" ? "image/jpeg" : "audio/webm",
-      });
+      .upload(fileName, file, { contentType });
 
     if (error) {
       console.error("Error uploading media:", error);
@@ -590,22 +601,30 @@ const DirectChat = () => {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <Avatar 
-          className="w-10 h-10 cursor-pointer"
+        <div
+          className="relative cursor-pointer flex-shrink-0"
           onClick={() => otherUser && navigate(`/user/${otherUser.id}`)}
         >
-          <AvatarImage src={otherUser?.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary/10 text-primary">
-            {otherUser?.display_name?.charAt(0) || "U"}
-          </AvatarFallback>
-        </Avatar>
+          <Avatar className="w-10 h-10">
+            <AvatarImage src={otherUser?.avatar_url || undefined} />
+            <AvatarFallback className="bg-primary/10 text-primary">
+              {otherUser?.display_name?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
+          {isOtherUserOnline && (
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card" />
+          )}
+        </div>
         <div className="flex-1 min-w-0">
-          <h1 
+          <h1
             className="font-semibold truncate cursor-pointer hover:underline"
             onClick={() => otherUser && navigate(`/user/${otherUser.id}`)}
           >
             {otherUser?.display_name || t("common.user")}
           </h1>
+          {isOtherUserOnline && (
+            <p className="text-xs text-green-500 leading-none mt-0.5">Online</p>
+          )}
         </div>
          
          {/* More Options Menu */}

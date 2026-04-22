@@ -17,43 +17,60 @@ export const useAudioRecorder = (): UseAudioRecorderResult => {
   const streamRef = useRef<MediaStream | null>(null);
 
   const startRecording = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("UNSUPPORTED");
+    }
+    if (typeof MediaRecorder === "undefined") {
+      throw new Error("UNSUPPORTED");
+    }
+
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         },
       });
-
-      streamRef.current = stream;
-      chunksRef.current = [];
-      setRecordingDuration(0);
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "audio/mp4",
-      });
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100);
-      setIsRecording(true);
-
-      // Start duration timer
-      timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
-      }, 1000);
-    } catch (error) {
-      console.error("Error starting recording:", error);
-      throw error;
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        throw new Error("PERMISSION_DENIED");
+      }
+      throw new Error("UNSUPPORTED");
     }
+
+    streamRef.current = stream;
+    chunksRef.current = [];
+    setRecordingDuration(0);
+
+    // Pick the best supported format: webm → mp4 → default
+    let mimeType = "";
+    if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+      mimeType = "audio/webm;codecs=opus";
+    } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+      mimeType = "audio/webm";
+    } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+      mimeType = "audio/mp4";
+    }
+
+    const mediaRecorder = mimeType
+      ? new MediaRecorder(stream, { mimeType })
+      : new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        chunksRef.current.push(e.data);
+      }
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start(100);
+    setIsRecording(true);
+
+    timerRef.current = setInterval(() => {
+      setRecordingDuration((prev) => prev + 1);
+    }, 1000);
   }, []);
 
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
@@ -64,18 +81,14 @@ export const useAudioRecorder = (): UseAudioRecorderResult => {
       }
 
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunksRef.current, {
-          type: mediaRecorderRef.current?.mimeType || "audio/webm",
-        });
+        const mimeType = mediaRecorderRef.current?.mimeType || "audio/mp4";
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         resolve(blob);
       };
 
       mediaRecorderRef.current.stop();
-      
-      // Stop all tracks
       streamRef.current?.getTracks().forEach((track) => track.stop());
-      
-      // Clear timer
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -90,7 +103,7 @@ export const useAudioRecorder = (): UseAudioRecorderResult => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       streamRef.current?.getTracks().forEach((track) => track.stop());
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
