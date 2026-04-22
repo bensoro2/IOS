@@ -386,9 +386,9 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-card">
+      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-card" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <ProvinceSelector 
           selectedProvince={selectedProvince} 
           onSelect={(p) => { setSelectedProvince(p); localStorage.setItem("selected_province", p); }} 
@@ -423,7 +423,7 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-4 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         {/* Search Bar */}
         <ActivitySearchSelector
           value={selectedCategory}

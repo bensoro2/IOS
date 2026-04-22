@@ -286,12 +286,12 @@ const Messages = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="px-4 py-4 bg-card border-b border-border">
+    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden">
+      <header className="flex-shrink-0 px-4 py-4 bg-card border-b border-border" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
         <h1 className="text-xl font-bold">{t("messages.title")}</h1>
       </header>
 
-      <main className="flex-1 px-4 py-4 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-transparent border border-border rounded-full p-1 h-auto">
             <TabsTrigger 

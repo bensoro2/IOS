@@ -614,7 +614,7 @@ const GroupChat = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-background flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       {/* Header - Fixed */}
       <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-card border-b border-border">
         <button
