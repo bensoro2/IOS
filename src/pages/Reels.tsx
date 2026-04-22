@@ -364,7 +364,7 @@ const Reels = () => {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-gradient-to-b from-black/80 to-transparent flex items-center gap-3">
+      <header className="fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-gradient-to-b from-black/80 to-transparent flex items-center gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         {filterUserId && (
           <button
             onClick={() => navigate(`/user/${filterUserId}`)}

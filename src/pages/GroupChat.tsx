@@ -27,6 +27,10 @@ interface Message {
   user_avatar?: string;
   media_url?: string | null;
   media_type?: string | null;
+  is_deleted?: boolean;
+  reactions?: Record<string, string[]> | null;
+  reply_to_id?: string | null;
+  reply_preview?: string | null;
 }
 
 interface ActivityInfo {
@@ -49,6 +53,7 @@ const GroupChat = () => {
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [isLeaving, setIsLeaving] = useState(false);
   const { muted: isGroupMuted, toggle: toggleGroupMute } = useGroupNotificationMute(id || "");
@@ -569,6 +574,29 @@ const GroupChat = () => {
     }
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, is_deleted: true } : m));
+    const { error } = await supabase.from("group_chat_messages").update({ is_deleted: true }).eq("id", messageId);
+    if (error) {
+      setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, is_deleted: false } : m));
+      toast.error(error.message);
+    }
+  };
+
+  const handleReactMessage = async (messageId: string, emoji: string) => {
+    if (!currentUserId) return;
+    const msg = messages.find((m) => m.id === messageId);
+    if (!msg) return;
+    const reactions: Record<string, string[]> = { ...(msg.reactions || {}) };
+    const users = reactions[emoji] ? [...reactions[emoji]] : [];
+    const idx = users.indexOf(currentUserId);
+    if (idx >= 0) users.splice(idx, 1);
+    else users.push(currentUserId);
+    reactions[emoji] = users;
+    setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, reactions } : m));
+    await supabase.from("group_chat_messages").update({ reactions }).eq("id", messageId);
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString(getIntlLocale(language), {
@@ -678,6 +706,10 @@ const GroupChat = () => {
               message={message}
               isOwn={message.user_id === currentUserId}
               formatTime={formatTime}
+              currentUserId={currentUserId ?? undefined}
+              onDelete={handleDeleteMessage}
+              onReply={(msg) => setReplyTo(msg)}
+              onReact={handleReactMessage}
             />
           ))
         )}
