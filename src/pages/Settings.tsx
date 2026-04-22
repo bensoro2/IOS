@@ -332,14 +332,10 @@ const Settings = () => {
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      const { data, error } = await supabase.rpc("delete_my_account");
 
-      const { data, error } = await supabase.functions.invoke("delete-account", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-
-      if (error || data?.error) throw new Error(error?.message || data?.error);
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Delete failed");
 
       toast.success(t("toast.accountDeleted"));
       await supabase.auth.signOut();
