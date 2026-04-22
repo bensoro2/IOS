@@ -378,11 +378,11 @@ const Reels = () => {
       </header>
 
       {/* Reels Container */}
-      <div 
+      <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="h-[100dvh] overflow-y-scroll snap-y snap-mandatory scrollbar-hide scroll-smooth overscroll-contain"
-        style={{ scrollSnapType: 'y mandatory' }}
+        className="fixed inset-0 overflow-y-scroll snap-y snap-mandatory scrollbar-hide overscroll-contain"
+        style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
       >
         {reels.map((reel, index) => (
           <ReelCard
