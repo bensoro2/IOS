@@ -15,7 +15,7 @@ BEGIN
   DELETE FROM public.reel_comment_likes WHERE user_id = v_user_id;
   DELETE FROM public.reel_comments WHERE user_id = v_user_id;
   DELETE FROM public.reel_likes WHERE user_id = v_user_id;
-  DELETE FROM public.reel_reports WHERE reporter_id = v_user_id;
+  DELETE FROM public.reel_reports WHERE user_id = v_user_id;
   DELETE FROM public.user_reel_preferences WHERE user_id = v_user_id;
   DELETE FROM public.reels WHERE user_id = v_user_id;
 
