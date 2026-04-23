@@ -46,7 +46,7 @@ interface DirectConversation {
 }
 
 const Messages = () => {
-  const swipe = useSwipeNavigation({ right: "/reels" }); // swipe right → Reels
+  const swipe = useSwipeNavigation({ right: "/reels", left: "/profile" });
   const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
   const [directConversations, setDirectConversations] = useState<DirectConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);

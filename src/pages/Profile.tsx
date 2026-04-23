@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +109,7 @@ interface LikedReel {
 }
 
 const Profile = () => {
+  const swipe = useSwipeNavigation({ right: "/messages" }); // swipe right → Messages
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { language, t } = useLanguage();
@@ -428,7 +430,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} {...swipe}>
       {/* Header */}
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <button onClick={() => navigate("/")} className="p-2">
