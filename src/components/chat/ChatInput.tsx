@@ -40,7 +40,7 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
     await onSendText(text);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendText();
@@ -238,7 +238,7 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
           <input
             type="file"
             accept="audio/*"
-            capture={true}
+            capture={"microphone" as any}
             ref={audioInputRef}
             onChange={handleAudioFileSelect}
             className="hidden"
@@ -256,7 +256,7 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             placeholder={t("chat.placeholder")}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             className="flex-1 bg-muted border-0"
             disabled={isSending}
           />
