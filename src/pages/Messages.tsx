@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -45,6 +46,7 @@ interface DirectConversation {
 }
 
 const Messages = () => {
+  const swipe = useSwipeNavigation({ right: "/reels" }); // swipe right → Reels
   const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
   const [directConversations, setDirectConversations] = useState<DirectConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -290,7 +292,7 @@ const Messages = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden" {...swipe}>
       <header className="flex-shrink-0 px-4 py-4 bg-card border-b border-border" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
         <h1 className="text-xl font-bold">{t("messages.title")}</h1>
       </header>

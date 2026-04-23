@@ -1,10 +1,8 @@
 import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Loader2, Mic, Image, X, Square, Reply } from "lucide-react";
-import { useAudioRecorder, formatDuration } from "@/hooks/useAudioRecorder";
+import { Send, Loader2, Image, X, Reply } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Capacitor } from "@capacitor/core";
 
 interface ChatInputProps {
   onSendText: (text: string) => Promise<void>;
@@ -14,24 +12,12 @@ interface ChatInputProps {
   onCancelReply?: () => void;
 }
 
-const isNative = Capacitor.isNativePlatform();
-
 const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply }: ChatInputProps) => {
   const { t } = useLanguage();
   const [message, setMessage] = useState("");
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
-
-  // Web-only MediaRecorder (not used on native)
-  const {
-    isRecording,
-    recordingDuration,
-    startRecording,
-    stopRecording,
-    cancelRecording,
-  } = useAudioRecorder();
 
   const handleSendText = async () => {
     if (!message.trim() || isSending) return;
@@ -57,7 +43,6 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
     if (!files.length) return;
 
     setSelectedFiles((prev) => [...prev, ...files]);
-
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -65,7 +50,6 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
       };
       reader.readAsDataURL(file);
     });
-
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -86,30 +70,6 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
     setSelectedFiles([]);
     setPreviewImages([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  // Native: เปิด system audio recorder ผ่าน file input
-  const handleNativeMicPress = () => {
-    audioInputRef.current?.click();
-  };
-
-  const handleAudioFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await onSendMedia(file, "audio");
-    if (audioInputRef.current) audioInputRef.current.value = "";
-  };
-
-  // Web: ใช้ MediaRecorder
-  const handleWebMicPress = async () => {
-    if (isRecording) {
-      const audioBlob = await stopRecording();
-      if (audioBlob) {
-        await onSendMedia(audioBlob, "audio");
-      }
-    } else {
-      await startRecording();
-    }
   };
 
   // Image preview mode
@@ -150,63 +110,11 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             className="flex-1 bg-muted border-0"
             disabled={isSending}
           />
-          <Button
-            size="icon"
-            onClick={handleSendImages}
-            disabled={isSending}
-            className="flex-shrink-0"
-          >
-            {isSending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
+          <Button size="icon" onClick={handleSendImages} disabled={isSending} className="flex-shrink-0">
+            {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </Button>
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          ref={fileInputRef}
-          onChange={handleImageSelect}
-          className="hidden"
-        />
-      </div>
-    );
-  }
-
-  // Web recording mode
-  if (!isNative && isRecording) {
-    return (
-      <div className="flex-shrink-0 px-4 py-3 bg-card border-t border-border">
-        <div className="flex items-center gap-3">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={cancelRecording}
-            className="flex-shrink-0 text-destructive"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-          <div className="flex-1 flex items-center gap-3">
-            <div className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
-            <span className="text-sm font-medium">
-              {t("chat.recording")} {formatDuration(recordingDuration)}
-            </span>
-          </div>
-          <Button
-            size="icon"
-            onClick={handleWebMicPress}
-            disabled={isSending}
-            className="flex-shrink-0 bg-destructive hover:bg-destructive/90"
-          >
-            {isSending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Square className="w-4 h-4 fill-current" />
-            )}
-          </Button>
-        </div>
+        <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageSelect} className="hidden" />
       </div>
     );
   }
@@ -225,31 +133,8 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
       )}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2">
-          {/* Image picker */}
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            ref={fileInputRef}
-            onChange={handleImageSelect}
-            className="hidden"
-          />
-          {/* Native audio recorder (iOS & Android) */}
-          <input
-            type="file"
-            accept="audio/*"
-            capture={"microphone" as any}
-            ref={audioInputRef}
-            onChange={handleAudioFileSelect}
-            className="hidden"
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isSending}
-            className="flex-shrink-0"
-          >
+          <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageSelect} className="hidden" />
+          <Button size="icon" variant="ghost" onClick={() => fileInputRef.current?.click()} disabled={isSending} className="flex-shrink-0">
             <Image className="w-5 h-5" />
           </Button>
           <Input
@@ -260,34 +145,9 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             className="flex-1 bg-muted border-0"
             disabled={isSending}
           />
-          {message.trim() ? (
-            <Button
-              size="icon"
-              onClick={handleSendText}
-              disabled={!message.trim() || isSending}
-              className="flex-shrink-0"
-            >
-              {isSending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </Button>
-          ) : (
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={isNative ? handleNativeMicPress : handleWebMicPress}
-              disabled={isSending}
-              className="flex-shrink-0"
-            >
-              {isSending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Mic className="w-5 h-5" />
-              )}
-            </Button>
-          )}
+          <Button size="icon" onClick={handleSendText} disabled={!message.trim() || isSending} className="flex-shrink-0">
+            {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+          </Button>
         </div>
       </div>
     </div>

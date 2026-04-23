@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { supabase } from "@/integrations/supabase/client";
 import { ProvinceSelector } from "@/components/ProvinceSelector";
 import { CreateActivityDialog } from "@/components/CreateActivityDialog";
@@ -22,6 +23,7 @@ import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryP
 
 const Index = () => {
   const { t } = useLanguage();
+  const swipe = useSwipeNavigation({ left: "/reels" }); // swipe left → Reels
   const [user, setUser] = useState<any>(null);
   const countryCode = getSelectedCountryCode();
   const savedProvince = localStorage.getItem("selected_province");
@@ -386,7 +388,7 @@ const Index = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden" {...swipe}>
       {/* Header */}
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-card" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <ProvinceSelector 
