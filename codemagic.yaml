@@ -86,24 +86,35 @@ workflows:
           }
           CONTENTS
 
-      - name: Add custom URL scheme to Info.plist
+      - name: Add custom URL scheme and permissions to Info.plist
         script: |
           python3 - << 'EOF'
           import plistlib
           path = 'ios/App/App/Info.plist'
           with open(path, 'rb') as f:
               plist = plistlib.load(f)
+
+          # Add custom URL scheme for OAuth deep link
           scheme = 'com.levelon.app'
           url_types = plist.get('CFBundleURLTypes', [])
-          for entry in url_types:
-              if scheme in entry.get('CFBundleURLSchemes', []):
-                  print('URL scheme already exists')
-                  exit(0)
-          url_types.append({'CFBundleTypeRole': 'Editor', 'CFBundleURLName': scheme, 'CFBundleURLSchemes': [scheme]})
-          plist['CFBundleURLTypes'] = url_types
+          has_scheme = any(scheme in e.get('CFBundleURLSchemes', []) for e in url_types)
+          if not has_scheme:
+              url_types.append({'CFBundleTypeRole': 'Editor', 'CFBundleURLName': scheme, 'CFBundleURLSchemes': [scheme]})
+              plist['CFBundleURLTypes'] = url_types
+              print('URL scheme added')
+          else:
+              print('URL scheme already exists')
+
+          # Add microphone permission (required for audio recording in chat)
+          if 'NSMicrophoneUsageDescription' not in plist:
+              plist['NSMicrophoneUsageDescription'] = 'ใช้ไมโครโฟนสำหรับบันทึกข้อความเสียงในแชท'
+              print('Microphone permission added')
+          else:
+              print('Microphone permission already exists')
+
           with open(path, 'wb') as f:
               plistlib.dump(plist, f)
-          print('URL scheme added successfully')
+          print('Info.plist updated successfully')
           EOF
 
       - name: Use provisioning profiles

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Send, Loader2, Mic, Image, X, Square, Reply } from "lucide-react";
 import { useAudioRecorder, formatDuration } from "@/hooks/useAudioRecorder";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
 
 interface ChatInputProps {
   onSendText: (text: string) => Promise<void>;
@@ -14,13 +14,17 @@ interface ChatInputProps {
   onCancelReply?: () => void;
 }
 
+const isNative = Capacitor.isNativePlatform();
+
 const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply }: ChatInputProps) => {
   const { t } = useLanguage();
   const [message, setMessage] = useState("");
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
+  // Web-only MediaRecorder (not used on native)
   const {
     isRecording,
     recordingDuration,
@@ -84,22 +88,27 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleMicPress = async () => {
+  // Native: เปิด system audio recorder ผ่าน file input
+  const handleNativeMicPress = () => {
+    audioInputRef.current?.click();
+  };
+
+  const handleAudioFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await onSendMedia(file, "audio");
+    if (audioInputRef.current) audioInputRef.current.value = "";
+  };
+
+  // Web: ใช้ MediaRecorder
+  const handleWebMicPress = async () => {
     if (isRecording) {
       const audioBlob = await stopRecording();
       if (audioBlob) {
         await onSendMedia(audioBlob, "audio");
       }
     } else {
-      try {
-        await startRecording();
-      } catch (error: any) {
-        if (error?.message === "PERMISSION_DENIED") {
-          toast.error("ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน กรุณาเปิดสิทธิ์ในการตั้งค่า");
-        } else {
-          toast.error("อุปกรณ์นี้ไม่รองรับการบันทึกเสียง");
-        }
-      }
+      await startRecording();
     }
   };
 
@@ -123,7 +132,6 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
               </button>
             </div>
           ))}
-          {/* Add more button */}
           <button
             onClick={() => fileInputRef.current?.click()}
             className="h-24 w-24 rounded-lg border-2 border-dashed border-muted-foreground/40 flex items-center justify-center text-muted-foreground hover:bg-muted"
@@ -167,8 +175,8 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
     );
   }
 
-  // Recording mode
-  if (isRecording) {
+  // Web recording mode
+  if (!isNative && isRecording) {
     return (
       <div className="flex-shrink-0 px-4 py-3 bg-card border-t border-border">
         <div className="flex items-center gap-3">
@@ -188,7 +196,7 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
           </div>
           <Button
             size="icon"
-            onClick={handleMicPress}
+            onClick={handleWebMicPress}
             disabled={isSending}
             className="flex-shrink-0 bg-destructive hover:bg-destructive/90"
           >
@@ -217,12 +225,22 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
       )}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2">
+          {/* Image picker */}
           <input
             type="file"
             accept="image/*"
             multiple
             ref={fileInputRef}
             onChange={handleImageSelect}
+            className="hidden"
+          />
+          {/* Native audio recorder (iOS & Android) */}
+          <input
+            type="file"
+            accept="audio/*"
+            capture={true}
+            ref={audioInputRef}
+            onChange={handleAudioFileSelect}
             className="hidden"
           />
           <Button
@@ -259,11 +277,15 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             <Button
               size="icon"
               variant="ghost"
-              onClick={handleMicPress}
+              onClick={isNative ? handleNativeMicPress : handleWebMicPress}
               disabled={isSending}
               className="flex-shrink-0"
             >
-              <Mic className="w-5 h-5" />
+              {isSending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
             </Button>
           )}
         </div>
