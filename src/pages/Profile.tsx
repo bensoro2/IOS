@@ -428,9 +428,9 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
+    <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
+      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <button onClick={() => navigate("/")} className="p-2">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -444,7 +444,7 @@ const Profile = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+      <main className="flex-1 min-h-0 px-4 py-4 space-y-4 overflow-y-auto pb-20">
         {/* Profile Card */}
         <div className="bg-card rounded-2xl p-5">
           <div className="flex items-center gap-4">

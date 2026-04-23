@@ -146,8 +146,8 @@ const TopRank = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
+    <div className="fixed inset-0 bg-background flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <button onClick={() => navigate(-1)} className="p-2">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -194,7 +194,7 @@ const TopRank = () => {
 
       {/* <FundingBar /> */}
 
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto pb-20 min-h-0">
         {loading ? (
           <div className="p-4 space-y-4">
             {[...Array(3)].map((_, i) => (
