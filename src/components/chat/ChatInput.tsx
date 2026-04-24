@@ -148,7 +148,13 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             className="flex-1 bg-muted border-0"
             disabled={isSending}
           />
-          <Button size="icon" onClick={handleSendText} disabled={!message.trim() || isSending} className="flex-shrink-0">
+          <Button
+            size="icon"
+            onClick={handleSendText}
+            onMouseDown={(e) => e.preventDefault()}
+            disabled={!message.trim() || isSending}
+            className="flex-shrink-0"
+          >
             {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </Button>
         </div>
