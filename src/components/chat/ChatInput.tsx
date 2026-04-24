@@ -1,8 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Loader2, Image, X, Reply } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Capacitor } from "@capacitor/core";
+import { Keyboard } from "@capacitor/keyboard";
 
 interface ChatInputProps {
   onSendText: (text: string) => Promise<void>;
@@ -19,34 +21,18 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sendBtnRef = useRef<HTMLButtonElement>(null);
-
-  // Ref always holds the latest handleSendText — solves closure issue in native listener
-  const handleSendRef = useRef<() => void>(() => {});
 
   const handleSendText = async () => {
     if (!message.trim() || isSending) return;
     const text = message.trim();
     setMessage("");
+    if (Capacitor.isNativePlatform()) {
+      Keyboard.show().catch(() => {});
+    } else {
+      inputRef.current?.focus();
+    }
     await onSendText(text);
   };
-
-  handleSendRef.current = handleSendText;
-
-  // Native touchstart with { passive: false } is required on iOS WKWebView
-  // React synthetic events are passive — preventDefault() is silently ignored
-  useEffect(() => {
-    const btn = sendBtnRef.current;
-    if (!btn) return;
-
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault(); // prevents keyboard from closing (works only in non-passive listener)
-      handleSendRef.current();
-    };
-
-    btn.addEventListener("touchstart", onTouchStart, { passive: false });
-    return () => btn.removeEventListener("touchstart", onTouchStart);
-  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -168,9 +154,7 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             className="flex-1 bg-muted border-0"
             disabled={isSending}
           />
-          {/* ref + native touchstart (non-passive) keeps keyboard open on iOS */}
           <Button
-            ref={sendBtnRef}
             size="icon"
             onClick={handleSendText}
             disabled={!message.trim() || isSending}
