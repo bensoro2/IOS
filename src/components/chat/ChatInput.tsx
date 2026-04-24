@@ -150,8 +150,10 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
           />
           <Button
             size="icon"
-            onClick={handleSendText}
-            onMouseDown={(e) => e.preventDefault()}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              handleSendText();
+            }}
             disabled={!message.trim() || isSending}
             className="flex-shrink-0"
           >
