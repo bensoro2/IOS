@@ -154,14 +154,17 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             className="flex-1 bg-muted border-0"
             disabled={isSending}
           />
-          <Button
-            size="icon"
+          {/* div instead of button — non-focusable so iOS won't blur input/close keyboard */}
+          <div
+            role="button"
+            aria-label="Send"
             onClick={handleSendText}
-            disabled={!message.trim() || isSending}
-            className="flex-shrink-0"
+            className={`flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-md bg-primary text-primary-foreground transition-opacity ${
+              !message.trim() || isSending ? "opacity-40 pointer-events-none" : "active:opacity-70"
+            }`}
           >
-            {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </Button>
+            {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </div>
         </div>
       </div>
     </div>
