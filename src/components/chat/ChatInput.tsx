@@ -18,11 +18,13 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSendText = async () => {
     if (!message.trim() || isSending) return;
     const text = message.trim();
     setMessage("");
+    inputRef.current?.focus(); // keep keyboard open
     await onSendText(text);
   };
 
@@ -138,6 +140,7 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             <Image className="w-5 h-5" />
           </Button>
           <Input
+            ref={inputRef}
             placeholder={t("chat.placeholder")}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
