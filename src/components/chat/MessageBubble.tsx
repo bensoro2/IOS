@@ -20,6 +20,7 @@ export interface Message {
   reply_preview?: string | null;
   reactions?: Record<string, string[]> | null;
   is_deleted?: boolean;
+  read_at?: string | null;
 }
 
 interface MessageBubbleProps {
@@ -30,6 +31,9 @@ interface MessageBubbleProps {
   onReply?: (message: Message) => void;
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
+  showReadReceipt?: boolean;
+  otherUserAvatar?: string | null;
+  otherUserName?: string | null;
 }
 
 const AudioPlayer = ({ src }: { src: string }) => {
@@ -215,7 +219,7 @@ const renderTextWithLinks = (text: string) => {
   });
 };
 
-const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onDelete, onReact }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onDelete, onReact, showReadReceipt, otherUserAvatar, otherUserName }: MessageBubbleProps) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [showMenu, setShowMenu] = useState(false);
@@ -309,6 +313,19 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
           <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
             {formatTime(message.created_at)}
           </p>
+
+          {/* Read receipt — แสดงใต้ message ล่าสุดที่ถูกอ่านแล้ว */}
+          {isOwn && showReadReceipt && (
+            <div className="flex items-center justify-end gap-1 mt-0.5 mr-1">
+              <Avatar className="w-4 h-4">
+                <AvatarImage src={otherUserAvatar || undefined} />
+                <AvatarFallback className="text-[8px] bg-primary/20 text-primary">
+                  {otherUserName?.charAt(0) || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-[10px] text-muted-foreground">อ่านแล้ว</span>
+            </div>
+          )}
         </div>
       </div>
 

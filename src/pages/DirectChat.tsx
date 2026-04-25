@@ -44,6 +44,7 @@ interface Message {
   reply_preview?: string | null;
   reactions?: Record<string, string[]> | null;
   is_deleted?: boolean;
+  read_at?: string | null;
 }
 
 interface OtherUser {
@@ -185,6 +186,7 @@ const DirectChat = () => {
                 reply_preview: msg.reply_preview ?? null,
                 reactions: (msg.reactions as Record<string, string[]>) ?? null,
                 is_deleted: msg.is_deleted ?? false,
+                read_at: msg.read_at ?? null,
               }));
 
               return [...enriched, ...remainingTemp].sort(
@@ -227,6 +229,24 @@ const DirectChat = () => {
           filter: `sender_id=eq.${odirectId}`,
         },
         (payload) => { pollInterval = CHAT_POLL_INTERVAL_MS; handleNewDm(payload, currentUid); }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "direct_messages",
+          filter: `sender_id=eq.${currentUid}`,
+        },
+        (payload) => {
+          // อัปเดต read_at เมื่ออีกฝ่ายอ่านข้อความ
+          const updated = payload.new as { id: string; read_at: string | null };
+          if (updated.read_at) {
+            setMessages(prev => prev.map(m =>
+              m.id === updated.id ? { ...m, read_at: updated.read_at } : m
+            ));
+          }
+        }
       )
       .subscribe();
 
@@ -353,6 +373,7 @@ const DirectChat = () => {
           reply_preview: msg.reply_preview ?? null,
           reactions: (msg.reactions as Record<string, string[]>) ?? null,
           is_deleted: msg.is_deleted ?? false,
+          read_at: msg.read_at ?? null,
         };
       });
 
@@ -674,8 +695,13 @@ const DirectChat = () => {
               {t("directChat.startChat")} {otherUser?.display_name || t("common.user")}
             </p>
           </div>
-        ) : (
-          messages.map((message) => (
+        ) : (() => {
+          // หา message ล่าสุดที่ส่งโดย currentUser และมี read_at (อีกฝ่ายอ่านแล้ว)
+          const lastReadMsgId = [...messages]
+            .reverse()
+            .find(m => m.user_id === currentUserId && m.read_at)?.id ?? null;
+
+          return messages.map((message) => (
             <MessageBubble
               key={message.id}
               message={message}
@@ -685,9 +711,12 @@ const DirectChat = () => {
               onReply={handleReply}
               onDelete={handleDelete}
               onReact={handleReact}
+              showReadReceipt={message.id === lastReadMsgId}
+              otherUserAvatar={otherUser?.avatar_url}
+              otherUserName={otherUser?.display_name}
             />
-          ))
-        )}
+          ));
+        })()}
         <div ref={messagesEndRef} />
       </main>
 
