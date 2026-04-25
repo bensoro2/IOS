@@ -147,6 +147,9 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
           </Button>
           <Input
             ref={inputRef}
+            type="text"
+            enterKeyHint="send"
+            inputMode="text"
             placeholder={t("chat.placeholder")}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -154,12 +157,26 @@ const ChatInput = ({ onSendText, onSendMedia, isSending, replyTo, onCancelReply 
             className="flex-1 bg-muted border-0"
             disabled={isSending}
           />
-          {/* div instead of button — non-focusable so iOS won't blur input/close keyboard */}
+          {/* Send via div (non-focusable) + Keyboard.show() backup */}
           <div
             role="button"
             aria-label="Send"
-            onClick={handleSendText}
-            className={`flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-md bg-primary text-primary-foreground transition-opacity ${
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => {
+              if (!message.trim() || isSending) return;
+              handleSendText();
+              if (Capacitor.isNativePlatform()) {
+                setTimeout(() => Keyboard.show().catch(() => {}), 0);
+              }
+              inputRef.current?.focus();
+              e.preventDefault();
+            }}
+            onClick={() => {
+              // Skip if touchStart already handled (mobile)
+              if ("ontouchstart" in window) return;
+              handleSendText();
+            }}
+            className={`flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-md bg-primary text-primary-foreground transition-opacity select-none ${
               !message.trim() || isSending ? "opacity-40 pointer-events-none" : "active:opacity-70"
             }`}
           >
