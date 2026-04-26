@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getIntlLocale } from "@/lib/dateLocale";
 import { useParams, useNavigate } from "react-router-dom";
@@ -138,6 +138,7 @@ const DirectChat = () => {
 
       // Start polling fallback
       if (isActive) startPolling(user.id, odirectId);
+      return user.id;
     };
 
     const startPolling = (uid: string, otherUid: string) => {
@@ -159,7 +160,8 @@ const DirectChat = () => {
                 const p = prevMap.get(m.id);
                 if (!p) return false;
                 return p.is_deleted !== (m.is_deleted ?? false) ||
-                  JSON.stringify(p.reactions) !== JSON.stringify(m.reactions);
+                  JSON.stringify(p.reactions) !== JSON.stringify(m.reactions) ||
+                  p.read_at !== (m.read_at ?? null);
               });
 
               if (!hasNew && !hasUpdates && prev.filter(m => !m.id.startsWith("temp-")).length === data.length) {
@@ -205,9 +207,7 @@ const DirectChat = () => {
       pollTimeoutId = setTimeout(poll, pollInterval);
     };
 
-    init();
-
-    // Realtime subscription
+    // INSERT subscription (ไม่ต้องรู้ currentUid)
     const channel = supabase
       .channel(`direct-chat-${odirectId}`)
       .on(
@@ -230,25 +230,34 @@ const DirectChat = () => {
         },
         (payload) => { pollInterval = CHAT_POLL_INTERVAL_MS; handleNewDm(payload, currentUid); }
       )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "direct_messages",
-          filter: `sender_id=eq.${currentUid}`,
-        },
-        (payload) => {
-          // อัปเดต read_at เมื่ออีกฝ่ายอ่านข้อความ
-          const updated = payload.new as { id: string; read_at: string | null };
-          if (updated.read_at) {
-            setMessages(prev => prev.map(m =>
-              m.id === updated.id ? { ...m, read_at: updated.read_at } : m
-            ));
-          }
-        }
-      )
       .subscribe();
+
+    let readChannel: ReturnType<typeof supabase.channel> | null = null;
+
+    init().then((uid) => {
+      if (!uid || !isActive) return;
+      // UPDATE subscription สร้างหลัง init() เพื่อให้มี uid จริง
+      readChannel = supabase
+        .channel(`read-receipt-${odirectId}-${uid}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "direct_messages",
+            filter: `sender_id=eq.${uid}`,
+          },
+          (payload) => {
+            const updated = payload.new as { id: string; read_at: string | null };
+            if (updated.read_at) {
+              setMessages(prev => prev.map(m =>
+                m.id === updated.id ? { ...m, read_at: updated.read_at } : m
+              ));
+            }
+          }
+        )
+        .subscribe();
+    });
 
     function handleNewDm(payload: any, uid: string | null) {
       if (!uid) return;
@@ -322,6 +331,7 @@ const DirectChat = () => {
       isActive = false;
       clearTimeout(pollTimeoutId);
       supabase.removeChannel(channel);
+      if (readChannel) supabase.removeChannel(readChannel);
     };
   }, [odirectId, navigate]);
 
@@ -604,6 +614,11 @@ const DirectChat = () => {
     });
   };
 
+  // คำนวณ message ล่าสุดที่ส่งโดย currentUser และถูกอ่านแล้ว (คำนวณแค่เมื่อ messages เปลี่ยน)
+  const lastReadMsgId = useMemo(() => {
+    return [...messages].reverse().find(m => m.user_id === currentUserId && m.read_at)?.id ?? null;
+  }, [messages, currentUserId]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -695,13 +710,8 @@ const DirectChat = () => {
               {t("directChat.startChat")} {otherUser?.display_name || t("common.user")}
             </p>
           </div>
-        ) : (() => {
-          // หา message ล่าสุดที่ส่งโดย currentUser และมี read_at (อีกฝ่ายอ่านแล้ว)
-          const lastReadMsgId = [...messages]
-            .reverse()
-            .find(m => m.user_id === currentUserId && m.read_at)?.id ?? null;
-
-          return messages.map((message) => (
+        ) : (
+          messages.map((message) => (
             <MessageBubble
               key={message.id}
               message={message}
@@ -715,8 +725,8 @@ const DirectChat = () => {
               otherUserAvatar={otherUser?.avatar_url}
               otherUserName={otherUser?.display_name}
             />
-          ));
-        })()}
+          ))
+        )}
         <div ref={messagesEndRef} />
       </main>
 

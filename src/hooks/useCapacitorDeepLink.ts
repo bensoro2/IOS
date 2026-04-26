@@ -33,6 +33,18 @@ export const useCapacitorDeepLink = (navigate?: (path: string) => void) => {
           }
         }
 
+        // Handle reset-password deep link: com.levelon.app://reset-password?code=...
+        if (url.includes("reset-password")) {
+          const qi = url.indexOf("?");
+          const hi = url.indexOf("#");
+          let params = "";
+          if (hi !== -1) params = url.substring(hi);
+          else if (qi !== -1) params = url.substring(qi);
+          if (navigate) navigate("/reset-password" + params);
+          else window.location.replace("/reset-password" + params);
+          return;
+        }
+
         if (!url.includes("auth/callback")) return;
 
         // Extract token fragment or code param from deep link URL

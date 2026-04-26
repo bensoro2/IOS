@@ -3,35 +3,60 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Eye, EyeOff, KeyRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [preparing, setPreparing] = useState(true);
+  const [isReady, setIsReady] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { t } = useLanguage();
 
   useEffect(() => {
-    // Check for recovery token in URL hash
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    if (hashParams.get("type") === "recovery") {
-      setIsRecovery(true);
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setIsRecovery(true);
+    const prepare = async () => {
+      // PKCE flow: ?code=xxx (native deep link / web)
+      const code = searchParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
+          setIsReady(true);
+          setPreparing(false);
+          return;
+        }
       }
-    });
 
-    return () => subscription.unsubscribe();
+      // Implicit flow: #type=recovery&access_token=xxx (web)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      if (hashParams.get("type") === "recovery") {
+        setIsReady(true);
+        setPreparing(false);
+        return;
+      }
+
+      // Listen for PASSWORD_RECOVERY event (Supabase handles token automatically)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setIsReady(true);
+          setPreparing(false);
+        }
+      });
+
+      // Give it a moment then give up if nothing arrives
+      setTimeout(() => setPreparing(false), 2000);
+
+      return () => subscription.unsubscribe();
+    };
+
+    prepare();
   }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -69,14 +94,25 @@ const ResetPassword = () => {
         title: t("resetPassword.success"),
         description: t("resetPassword.successDesc"),
       });
-      navigate("/");
+      await supabase.auth.signOut();
+      navigate("/auth");
     }
     setLoading(false);
   };
 
-  if (!isRecovery) {
+  // Loading while checking token
+  if (preparing) {
     return (
-      <div className="default min-h-screen bg-gradient-to-b from-primary via-primary/80 to-primary/40 flex items-center justify-center p-4 text-foreground">
+      <div className="min-h-screen bg-gradient-to-b from-primary via-primary/80 to-primary/40 flex items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  // Invalid / expired link
+  if (!isReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary via-primary/80 to-primary/40 flex items-center justify-center p-4 text-foreground">
         <div className="w-full max-w-md bg-card rounded-2xl shadow-2xl p-8 text-center space-y-4">
           <KeyRound className="w-12 h-12 text-primary mx-auto" />
           <h1 className="text-xl font-bold">{t("resetPassword.invalidLink")}</h1>
@@ -92,7 +128,7 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="default min-h-screen bg-gradient-to-b from-primary via-primary/80 to-primary/40 flex items-center justify-center p-4 text-foreground">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-primary/80 to-primary/40 flex items-center justify-center p-4 text-foreground">
       <div className="w-full max-w-md bg-card rounded-2xl shadow-2xl p-8">
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -108,6 +144,7 @@ const ResetPassword = () => {
         </p>
 
         <form onSubmit={handleResetPassword} className="space-y-4">
+          {/* New Password */}
           <div className="space-y-2">
             <Label htmlFor="new-password">{t("changePassword.newPassword")}</Label>
             <div className="relative">
@@ -119,6 +156,7 @@ const ResetPassword = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="pr-10"
               />
               <button
                 type="button"
@@ -129,20 +167,44 @@ const ResetPassword = () => {
               </button>
             </div>
           </div>
+
+          {/* Confirm Password */}
           <div className="space-y-2">
             <Label htmlFor="confirm-password">{t("changePassword.confirmPassword")}</Label>
-            <Input
-              id="confirm-password"
-              type={showPassword ? "text" : "password"}
-              placeholder={t("changePassword.confirmPasswordPlaceholder")}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={6}
-            />
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder={t("changePassword.confirmPasswordPlaceholder")}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
+
+          {/* Password match indicator */}
+          {confirmPassword.length > 0 && (
+            <p className={`text-xs ${password === confirmPassword ? "text-green-500" : "text-destructive"}`}>
+              {password === confirmPassword ? "✓ รหัสผ่านตรงกัน" : "✗ รหัสผ่านไม่ตรงกัน"}
+            </p>
+          )}
+
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? t("changePassword.loading") : t("resetPassword.title")}
+            {loading ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t("changePassword.loading")}</>
+            ) : (
+              t("resetPassword.title")
+            )}
           </Button>
         </form>
       </div>

@@ -218,7 +218,9 @@ const Auth = () => {
     }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: Capacitor.isNativePlatform()
+        ? "com.levelon.app://reset-password"
+        : `${window.location.origin}/reset-password`,
     });
     if (error) {
       toast({
