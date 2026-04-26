@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Keyboard } from "@capacitor/keyboard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getIntlLocale } from "@/lib/dateLocale";
 import { useParams, useNavigate } from "react-router-dom";
@@ -72,6 +74,33 @@ const DirectChat = () => {
   const isOtherUserOnline = otherUser ? onlineUsers.has(otherUser.id) : false;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Swipe gestures: right = reveal timestamps, left = go back to messages list
+  const [swipeX, setSwipeX] = useState(0);
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleSwipeMove = (e: React.TouchEvent) => {
+    if (!swipeRef.current) return;
+    const dx = e.touches[0].clientX - swipeRef.current.x;
+    const dy = Math.abs(e.touches[0].clientY - swipeRef.current.y);
+    if (dy > Math.abs(dx) * 0.8) return; // vertical scroll — ไม่ขัด
+    if (dx > 0) setSwipeX(Math.min(dx, 80));
+  };
+
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (!swipeRef.current) return;
+    const dx = e.changedTouches[0].clientX - swipeRef.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeRef.current.y);
+    swipeRef.current = null;
+    setSwipeX(0);
+    if (Math.abs(dx) > 80 && dy < 100 && dx < 0) {
+      navigate("/messages?tab=private");
+    }
+  };
+
   const scrollToBottom = (instant = false) => {
     messagesEndRef.current?.scrollIntoView({ 
       behavior: instant ? "auto" : "smooth" 
@@ -83,6 +112,16 @@ const DirectChat = () => {
       scrollToBottom();
     }
   }, [messages, isLoading]);
+
+  // Scroll to bottom เมื่อ keyboard เปิด เพื่อไม่ให้ message ล่าสุดโดนบัง
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let listener: any;
+    Keyboard.addListener("keyboardWillShow", () => {
+      setTimeout(() => scrollToBottom(true), 100);
+    }).then(l => { listener = l; });
+    return () => { listener?.remove(); };
+  }, []);
 
   // Mark DMs from other user as read
   const markDmAsRead = async (userId: string, otherUserId: string) => {
@@ -709,32 +748,46 @@ const DirectChat = () => {
       </header>
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-20">
-            <p className="text-muted-foreground">{t("directChat.noMessages")}</p>
-            <p className="text-sm text-muted-foreground">
-              {t("directChat.startChat")} {otherUser?.display_name || t("common.user")}
-            </p>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              isOwn={message.user_id === currentUserId}
-              formatTime={formatTime}
-              currentUserId={currentUserId ?? undefined}
-              onReply={handleReply}
-              onDelete={handleDelete}
-              onReact={handleReact}
-              showReadReceipt={message.id === lastReadMsgId}
-              otherUserAvatar={otherUser?.avatar_url}
-              otherUserName={otherUser?.display_name}
-            />
-          ))
-        )}
-        <div ref={messagesEndRef} />
+      <main
+        className="flex-1 overflow-y-auto min-h-0"
+        onTouchStart={handleSwipeStart}
+        onTouchMove={handleSwipeMove}
+        onTouchEnd={handleSwipeEnd}
+      >
+        <div
+          className="px-4 py-4 space-y-4"
+          style={{
+            transform: `translateX(${swipeX * 0.4}px)`,
+            transition: swipeX === 0 ? "transform 0.2s ease-out" : "none",
+          }}
+        >
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <p className="text-muted-foreground">{t("directChat.noMessages")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("directChat.startChat")} {otherUser?.display_name || t("common.user")}
+              </p>
+            </div>
+          ) : (
+            messages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isOwn={message.user_id === currentUserId}
+                formatTime={formatTime}
+                currentUserId={currentUserId ?? undefined}
+                onReply={handleReply}
+                onDelete={handleDelete}
+                onReact={handleReact}
+                showReadReceipt={message.id === lastReadMsgId}
+                otherUserAvatar={otherUser?.avatar_url}
+                otherUserName={otherUser?.display_name}
+                swipeOffset={swipeX}
+              />
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </main>
 
       {/* Message Input */}

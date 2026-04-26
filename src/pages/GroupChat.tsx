@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Keyboard } from "@capacitor/keyboard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getIntlLocale } from "@/lib/dateLocale";
 import { useParams, useNavigate } from "react-router-dom";
@@ -70,6 +72,16 @@ const GroupChat = () => {
       scrollToBottom();
     }
   }, [messages, isLoading]);
+
+  // Scroll to bottom เมื่อ keyboard เปิด
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let listener: any;
+    Keyboard.addListener("keyboardWillShow", () => {
+      setTimeout(() => scrollToBottom(true), 100);
+    }).then(l => { listener = l; });
+    return () => { listener?.remove(); };
+  }, []);
 
   // Mark group chat as read
   const markGroupChatAsRead = async (userId: string, groupChatId: string) => {
