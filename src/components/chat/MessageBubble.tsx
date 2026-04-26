@@ -241,21 +241,7 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
 
   return (
     <>
-      <div className="flex items-end gap-1">
-        {/* Timestamp column ซ้าย — แสดงเมื่อ swipe right สำหรับ message ของเรา */}
-        {isOwn && (
-          <div
-            className="flex-shrink-0 text-xs text-muted-foreground overflow-hidden whitespace-nowrap flex items-center justify-end"
-            style={{
-              width: swipeOffset > 0 ? `${Math.max(0, swipeOffset * 0.75)}px` : "0px",
-              opacity: swipeOffset / 80,
-              transition: swipeOffset === 0 ? "all 0.2s ease-out" : "none",
-            }}
-          >
-            {formatTime(message.created_at)}
-          </div>
-        )}
-      <div className={`flex items-end gap-2 flex-1 ${isOwn ? "flex-row-reverse" : ""}`}>
+      <div className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
         {!isOwn && (
           <Avatar className="w-8 h-8 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate(`/user/${message.user_id}`)}>
             <AvatarImage src={message.user_avatar} />
@@ -325,7 +311,13 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
             </div>
           )}
 
-          <p className={`text-xs text-muted-foreground mt-1 ${isOwn ? "text-right mr-1" : "ml-1"}`}>
+          <p
+            className={`text-xs text-muted-foreground mt-1 ${isOwn ? "text-right mr-1" : "ml-1"}`}
+            style={{
+              opacity: swipeOffset / 80,
+              transition: swipeOffset === 0 ? "opacity 0.2s ease-out" : "none",
+            }}
+          >
             {formatTime(message.created_at)}
           </p>
 
@@ -342,20 +334,6 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
             </div>
           )}
         </div>
-      </div>
-        {/* Timestamp column ขวา — สำหรับ message คนอื่น */}
-        {!isOwn && (
-          <div
-            className="flex-shrink-0 text-xs text-muted-foreground overflow-hidden whitespace-nowrap flex items-center"
-            style={{
-              width: swipeOffset > 0 ? `${Math.max(0, swipeOffset * 0.75)}px` : "0px",
-              opacity: swipeOffset / 80,
-              transition: swipeOffset === 0 ? "all 0.2s ease-out" : "none",
-            }}
-          >
-            {formatTime(message.created_at)}
-          </div>
-        )}
       </div>
 
       {/* Lightbox */}

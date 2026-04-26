@@ -86,8 +86,10 @@ const DirectChat = () => {
     if (!swipeRef.current) return;
     const dx = e.touches[0].clientX - swipeRef.current.x;
     const dy = Math.abs(e.touches[0].clientY - swipeRef.current.y);
-    if (dy > Math.abs(dx) * 0.8) return; // vertical scroll — ไม่ขัด
+    if (dy > Math.abs(dx) * 0.8) return;
+    // ปัดขวา (dx > 0) → แสดง timestamp
     if (dx > 0) setSwipeX(Math.min(dx, 80));
+    else setSwipeX(0);
   };
 
   const handleSwipeEnd = (e: React.TouchEvent) => {
@@ -96,7 +98,8 @@ const DirectChat = () => {
     const dy = Math.abs(e.changedTouches[0].clientY - swipeRef.current.y);
     swipeRef.current = null;
     setSwipeX(0);
-    if (Math.abs(dx) > 80 && dy < 100 && dx < 0) {
+    // ปัดซ้าย (dx < 0) → กลับไปหน้ารายชื่อแชท
+    if (dx < -80 && dy < 100) {
       navigate("/messages?tab=private");
     }
   };
@@ -757,7 +760,7 @@ const DirectChat = () => {
         <div
           className="px-4 py-4 space-y-4"
           style={{
-            transform: `translateX(${swipeX * 0.4}px)`,
+            transform: `translateX(-${swipeX * 0.3}px)`,
             transition: swipeX === 0 ? "transform 0.2s ease-out" : "none",
           }}
         >
