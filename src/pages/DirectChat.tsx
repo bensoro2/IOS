@@ -614,9 +614,13 @@ const DirectChat = () => {
     });
   };
 
-  // คำนวณ message ล่าสุดที่ส่งโดย currentUser และถูกอ่านแล้ว (คำนวณแค่เมื่อ messages เปลี่ยน)
+  // แสดง "อ่านแล้ว" เฉพาะใต้ message ล่าสุดที่ส่ง และ message นั้นต้องถูกอ่านแล้วด้วย
+  // ถ้าส่ง message ใหม่แล้วยังไม่ถูกอ่าน → ไม่แสดงเลย (เหมือน Facebook)
   const lastReadMsgId = useMemo(() => {
-    return [...messages].reverse().find(m => m.user_id === currentUserId && m.read_at)?.id ?? null;
+    const myMsgs = messages.filter(m => m.user_id === currentUserId && !m.id.startsWith("temp-"));
+    if (myMsgs.length === 0) return null;
+    const lastMine = myMsgs[myMsgs.length - 1];
+    return lastMine.read_at ? lastMine.id : null;
   }, [messages, currentUserId]);
 
   if (isLoading) {

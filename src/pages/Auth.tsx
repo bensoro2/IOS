@@ -217,11 +217,21 @@ const Auth = () => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
-      redirectTo: Capacitor.isNativePlatform()
-        ? "com.levelon.app://reset-password"
-        : `${window.location.origin}/reset-password`,
-    });
+    // ลอง custom scheme ก่อน (native) ถ้า error ลอง web URL แทน
+    const redirectTo = Capacitor.isNativePlatform()
+      ? "com.levelon.app://reset-password"
+      : `${window.location.origin}/reset-password`;
+
+    let { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), { redirectTo });
+
+    // ถ้า custom scheme ยังไม่ได้ add ใน Supabase allowlist ให้ fallback เป็น web URL
+    if (error && Capacitor.isNativePlatform()) {
+      const fallback = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: "https://levelon.lovable.app/reset-password",
+      });
+      error = fallback.error;
+    }
+
     if (error) {
       toast({
         title: t("common.error"),
