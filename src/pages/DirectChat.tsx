@@ -281,6 +281,11 @@ const DirectChat = () => {
 
       if (!isRelevant) return;
 
+      // Auto-mark as read ทันทีถ้า message นี้ส่งมาหา uid และผู้ใช้กำลังอยู่ในหน้าแชทอยู่แล้ว
+      if (newMsg.sender_id === odirectId && newMsg.receiver_id === uid) {
+        markDmAsRead(uid, odirectId);
+      }
+
       supabase
         .from("users")
         .select("display_name, avatar_url")
@@ -614,13 +619,11 @@ const DirectChat = () => {
     });
   };
 
-  // แสดง "อ่านแล้ว" เฉพาะใต้ message ล่าสุดที่ส่ง และ message นั้นต้องถูกอ่านแล้วด้วย
-  // ถ้าส่ง message ใหม่แล้วยังไม่ถูกอ่าน → ไม่แสดงเลย (เหมือน Facebook)
+  // แสดง "อ่านแล้ว" ใต้ message ล่าสุดที่ถูกอ่าน
+  // ถ้าส่ง message ใหม่ (ยังไม่อ่าน) → ยังแสดงใต้ message เก่าที่อ่านแล้ว ไม่หาย
   const lastReadMsgId = useMemo(() => {
     const myMsgs = messages.filter(m => m.user_id === currentUserId && !m.id.startsWith("temp-"));
-    if (myMsgs.length === 0) return null;
-    const lastMine = myMsgs[myMsgs.length - 1];
-    return lastMine.read_at ? lastMine.id : null;
+    return [...myMsgs].reverse().find(m => m.read_at)?.id ?? null;
   }, [messages, currentUserId]);
 
   if (isLoading) {
