@@ -87,8 +87,8 @@ const DirectChat = () => {
     const dx = e.touches[0].clientX - swipeRef.current.x;
     const dy = Math.abs(e.touches[0].clientY - swipeRef.current.y);
     if (dy > Math.abs(dx) * 0.8) return;
-    // ปัดขวา (dx > 0) → แสดง timestamp
-    if (dx > 0) setSwipeX(Math.min(dx, 80));
+    // ปัดซ้าย (dx < 0) → แสดง timestamp
+    if (dx < 0) setSwipeX(Math.min(-dx, 80));
     else setSwipeX(0);
   };
 
@@ -98,8 +98,8 @@ const DirectChat = () => {
     const dy = Math.abs(e.changedTouches[0].clientY - swipeRef.current.y);
     swipeRef.current = null;
     setSwipeX(0);
-    // ปัดซ้าย (dx < 0) → กลับไปหน้ารายชื่อแชท
-    if (dx < -80 && dy < 100) {
+    // ปัดขวา (dx > 0) → กลับไปหน้ารายชื่อแชท
+    if (dx > 80 && dy < 100) {
       navigate("/messages?tab=private");
     }
   };
