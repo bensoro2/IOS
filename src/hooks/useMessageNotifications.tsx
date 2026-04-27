@@ -182,31 +182,42 @@ export const useMessageNotifications = () => {
       );
     };
 
+    let cancelled = false;
+
     const setup = async () => {
-      // Fetch all group IDs the user is a member of
-      const { data: memberships } = await supabase
+      const { data: memberships, error } = await supabase
         .from("group_chat_members")
         .select("group_chat_id")
         .eq("user_id", userId);
 
-      if (!memberships || memberships.length === 0) return;
+      if (cancelled) return;
+      if (error || !memberships || memberships.length === 0) return;
 
-      // Create one channel with a filter per group — ensures Realtime events are received
       const ch = supabase.channel(`group_notif_${userId}`);
       for (const { group_chat_id } of memberships) {
         ch.on(
           "postgres_changes",
-          { event: "INSERT", schema: "public", table: "group_chat_messages", filter: `group_chat_id=eq.${group_chat_id}` },
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "group_chat_messages",
+            filter: `group_chat_id=eq.${group_chat_id}`,
+          },
           handleGroupMsg
         );
       }
       ch.subscribe();
-      channel = ch;
+      if (!cancelled) {
+        channel = ch;
+      } else {
+        supabase.removeChannel(ch);
+      }
     };
 
     setup();
 
     return () => {
+      cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
   }, [userId]);
