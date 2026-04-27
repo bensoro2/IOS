@@ -108,109 +108,106 @@ export const useMessageNotifications = () => {
     };
   }, [userId]);
 
-  // Group chat notifications
+  // Group chat notifications — subscribe per group with filter (fixes missing Realtime events)
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel(`group_notifications:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "group_chat_messages",
-        },
-        async (payload) => {
-          const msg = payload.new as any;
-          if (msg.user_id === userId) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-          const groupChatId = msg.group_chat_id;
+    const handleGroupMsg = async (payload: any) => {
+      const msg = payload.new as any;
+      if (msg.user_id === userId) return;
 
-          // Check if user is a member of this group
-          const { data: membership } = await supabase
-            .from("group_chat_members")
-            .select("id")
-            .eq("group_chat_id", groupChatId)
-            .eq("user_id", userId)
-            .maybeSingle();
+      const groupChatId = msg.group_chat_id;
 
-          if (!membership) return;
+      // Fetch sender info and activity title in parallel
+      const [{ data: sender }, { data: groupChat }] = await Promise.all([
+        supabase.from("users").select("display_name, avatar_url").eq("id", msg.user_id).maybeSingle(),
+        supabase.from("activity_group_chats").select("activity_id").eq("id", groupChatId).maybeSingle(),
+      ]);
 
-          // Fetch sender info and activity title
-          const [{ data: sender }, { data: groupChat }] = await Promise.all([
-            supabase.from("users").select("display_name, avatar_url").eq("id", msg.user_id).maybeSingle(),
-            supabase.from("activity_group_chats").select("activity_id").eq("id", groupChatId).maybeSingle(),
-          ]);
+      let activityTitle = t("notif.groupChat");
+      if (groupChat?.activity_id) {
+        const { data: activity } = await supabase
+          .from("activities").select("title").eq("id", groupChat.activity_id).maybeSingle();
+        if (activity?.title) activityTitle = activity.title;
+      }
 
-          let activityTitle = t("notif.groupChat");
-          if (groupChat?.activity_id) {
-            const { data: activity } = await supabase
-              .from("activities")
-              .select("title")
-              .eq("id", groupChat.activity_id)
-              .maybeSingle();
-            if (activity?.title) activityTitle = activity.title;
-          }
+      const senderName = sender?.display_name || t("common.unknownUser");
+      const avatarUrl = sender?.avatar_url || "";
+      let preview = msg.content || "";
+      if (msg.media_type === "image") preview = t("notif.sentImage");
+      else if (msg.media_type === "audio") preview = t("notif.sentAudio");
+      else if (preview.length > 50) preview = preview.substring(0, 50) + "...";
 
-          const senderName = sender?.display_name || t("common.unknownUser");
-          const avatarUrl = sender?.avatar_url || "";
-          let preview = msg.content || "";
-          if (msg.media_type === "image") preview = t("notif.sentImage");
-          else if (msg.media_type === "audio") preview = t("notif.sentAudio");
-          else if (preview.length > 50) preview = preview.substring(0, 50) + "...";
+      if (!getNotificationsEnabled()) return;
+      if (isGroupMuted(groupChatId)) return;
 
-          if (!getNotificationsEnabled()) return;
-          if (isGroupMuted(groupChatId)) return;
+      const isVisible = document.visibilityState === "visible";
 
-          const isVisible = document.visibilityState === "visible";
+      if (!isVisible) {
+        triggerPush({
+          userId,
+          title: activityTitle,
+          body: `${senderName}: ${preview}`,
+          url: `/group-chat/${groupChatId}`,
+          tag: `group-${groupChatId}`,
+        });
+        return;
+      }
 
-          // Push only when app is in background
-          if (!isVisible) {
-            triggerPush({
-              userId,
-              title: `${activityTitle}`,
-              body: `${senderName}: ${preview}`,
-              url: `/group-chat/${groupChatId}`,
-              tag: `group-${groupChatId}`,
-            });
-            return;
-          }
+      if (window.location.pathname === `/group-chat/${groupChatId}`) return;
 
-          // In-App toast only when app is in foreground
-          if (window.location.pathname === `/group-chat/${groupChatId}`) return;
-
-          toast.custom(
-            (id) => (
-              <div
-                onClick={() => {
-                  toast.dismiss(id);
-                  window.location.href = `/group-chat/${groupChatId}`;
-                }}
-                className="flex items-center gap-3 w-full bg-card border border-border rounded-lg p-3 shadow-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              >
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold flex-shrink-0">
-                    {senderName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground truncate">{activityTitle}</p>
-                  <p className="text-sm font-semibold text-foreground truncate">{senderName}</p>
-                  <p className="text-xs text-muted-foreground truncate">{preview}</p>
-                </div>
+      toast.custom(
+        (id) => (
+          <div
+            onClick={() => { toast.dismiss(id); window.location.href = `/group-chat/${groupChatId}`; }}
+            className="flex items-center gap-3 w-full bg-card border border-border rounded-lg p-3 shadow-lg cursor-pointer hover:bg-muted/50 transition-colors"
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                {senderName.charAt(0).toUpperCase()}
               </div>
-            ),
-            { duration: 4000 }
-          );
-        }
-      )
-      .subscribe();
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground truncate">{activityTitle}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{senderName}</p>
+              <p className="text-xs text-muted-foreground truncate">{preview}</p>
+            </div>
+          </div>
+        ),
+        { duration: 4000 }
+      );
+    };
+
+    const setup = async () => {
+      // Fetch all group IDs the user is a member of
+      const { data: memberships } = await supabase
+        .from("group_chat_members")
+        .select("group_chat_id")
+        .eq("user_id", userId);
+
+      if (!memberships || memberships.length === 0) return;
+
+      // Create one channel with a filter per group — ensures Realtime events are received
+      const ch = supabase.channel(`group_notif_${userId}`);
+      for (const { group_chat_id } of memberships) {
+        ch.on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "group_chat_messages", filter: `group_chat_id=eq.${group_chat_id}` },
+          handleGroupMsg
+        );
+      }
+      ch.subscribe();
+      channel = ch;
+    };
+
+    setup();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [userId]);
 

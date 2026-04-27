@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { BottomNav } from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Heart, MessageCircle, UserPlus, Film } from "lucide-react";
@@ -177,8 +176,6 @@ const Notifications = () => {
           </div>
         )}
       </ScrollArea>
-
-      <BottomNav />
     </div>
   );
 };

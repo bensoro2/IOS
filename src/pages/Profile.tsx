@@ -59,7 +59,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { BottomNav } from "@/components/BottomNav";
 import { calculateLevelAndExp } from "@/utils/levelSystem";
 
 interface ActivityJoined {
@@ -913,20 +912,6 @@ const Profile = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bottom Navigation */}
-      <BottomNav
-        centerButton={
-          <CreateActivityDialog
-            selectedProvince=""
-            onActivityCreated={() => {}}
-            trigger={
-              <button className="p-3 -mt-2 rounded-full bg-primary text-primary-foreground shadow-lg">
-                <Plus className="w-6 h-6" />
-              </button>
-            }
-          />
-        }
-      />
     </div>
   );
 };

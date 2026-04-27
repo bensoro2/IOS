@@ -60,6 +60,32 @@ const GroupChat = () => {
   const [isLeaving, setIsLeaving] = useState(false);
   const { muted: isGroupMuted, toggle: toggleGroupMute } = useGroupNotificationMute(id || "");
 
+  // Swipe: ซ้าย (ขวา→ซ้าย) = แสดงเวลา, ขวา (ซ้าย→ขวา) = กลับหน้ารายชื่อ
+  const [swipeX, setSwipeX] = useState(0);
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleSwipeMove = (e: React.TouchEvent) => {
+    if (!swipeRef.current) return;
+    const dx = e.touches[0].clientX - swipeRef.current.x;
+    const dy = Math.abs(e.touches[0].clientY - swipeRef.current.y);
+    if (dy > Math.abs(dx) * 0.8) return;
+    if (dx < 0) setSwipeX(Math.min(-dx, 80));
+    else setSwipeX(0);
+  };
+
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (!swipeRef.current) return;
+    const dx = e.changedTouches[0].clientX - swipeRef.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeRef.current.y);
+    swipeRef.current = null;
+    setSwipeX(0);
+    if (dx > 80 && dy < 100) navigate("/messages?tab=group");
+  };
+
   const scrollToBottom = (instant = false) => {
     messagesEndRef.current?.scrollIntoView({ 
       behavior: instant ? "auto" : "smooth" 
@@ -710,29 +736,43 @@ const GroupChat = () => {
       </header>
 
       {/* Messages - Scrollable */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-20">
-            <p className="text-muted-foreground">{t("messages.noMessages")}</p>
-            <p className="text-sm text-muted-foreground">
-              {t("groupChat.startConversation")}
-            </p>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              isOwn={message.user_id === currentUserId}
-              formatTime={formatTime}
-              currentUserId={currentUserId ?? undefined}
-              onDelete={handleDeleteMessage}
-              onReply={(msg) => setReplyTo(msg)}
-              onReact={handleReactMessage}
-            />
-          ))
-        )}
-        <div ref={messagesEndRef} />
+      <main
+        className="flex-1 overflow-y-auto min-h-0"
+        onTouchStart={handleSwipeStart}
+        onTouchMove={handleSwipeMove}
+        onTouchEnd={handleSwipeEnd}
+      >
+        <div
+          className="px-4 py-4 space-y-4"
+          style={{
+            transform: `translateX(-${swipeX * 0.3}px)`,
+            transition: swipeX === 0 ? "transform 0.2s ease-out" : "none",
+          }}
+        >
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <p className="text-muted-foreground">{t("messages.noMessages")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("groupChat.startConversation")}
+              </p>
+            </div>
+          ) : (
+            messages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isOwn={message.user_id === currentUserId}
+                formatTime={formatTime}
+                currentUserId={currentUserId ?? undefined}
+                onDelete={handleDeleteMessage}
+                onReply={(msg) => setReplyTo(msg)}
+                onReact={handleReactMessage}
+                swipeOffset={swipeX}
+              />
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </main>
 
       {/* Message Input */}

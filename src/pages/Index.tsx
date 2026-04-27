@@ -16,14 +16,13 @@ import {
   Loader2,
   UserPlus
 } from "lucide-react";
-import { BottomNav } from "@/components/BottomNav";
 import { calculateLevel } from "@/utils/levelSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryProvinces";
 
 const Index = () => {
   const { t } = useLanguage();
-  const swipe = useSwipeNavigation({ left: "/reels" }); // swipe left → Reels
+  const swipe = useSwipeNavigation({ left: "/messages" }); // Reels ปิดชั่วคราว → ไป Messages แทน
   const [user, setUser] = useState<any>(null);
   const countryCode = getSelectedCountryCode();
   const savedProvince = localStorage.getItem("selected_province");
@@ -498,24 +497,6 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Bottom Navigation */}
-      <BottomNav 
-        onHomeClick={() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          fetchActivities(selectedProvince, selectedCategory);
-        }}
-        centerButton={
-          <CreateActivityDialog 
-            selectedProvince={selectedProvince}
-            onActivityCreated={() => fetchActivities(selectedProvince, selectedCategory)}
-            trigger={
-              <button className="p-3 -mt-2 rounded-full bg-primary text-primary-foreground shadow-lg">
-                <Plus className="w-6 h-6" />
-              </button>
-            }
-          />
-        }
-      />
  
        {/* Join Requests Dialog */}
        <JoinRequestsDialog

@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getSubCategoryById, getLocalizedName } from "@/constants/activityCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { calculateLevelAndExp } from "@/utils/levelSystem";
-import { BottomNav } from "@/components/BottomNav";
 // import { FundingBar } from "@/components/FundingBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -265,8 +264,6 @@ const TopRank = () => {
           </div>
         )}
       </main>
-
-      <BottomNav />
     </div>
   );
 };

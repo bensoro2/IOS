@@ -10,7 +10,6 @@ import {
   Plus, 
   Loader2,
 } from "lucide-react";
-import { BottomNav } from "@/components/BottomNav";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryProvinces";
  
@@ -166,8 +165,6 @@ import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryP
          </div>
        </main>
  
-       {/* Bottom Navigation */}
-       <BottomNav />
      </div>
    );
  };

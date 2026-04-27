@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BottomNav } from "@/components/BottomNav";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CreateActivityDialog } from "@/components/CreateActivityDialog";
 import { usePresence } from "@/hooks/usePresence";
@@ -46,7 +45,7 @@ interface DirectConversation {
 }
 
 const Messages = () => {
-  const swipe = useSwipeNavigation({ right: "/reels", left: "/profile" });
+  const swipe = useSwipeNavigation({ right: "/", left: "/profile" }); // Reels ปิดชั่วคราว → swipe right ไป Home
   const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
   const [directConversations, setDirectConversations] = useState<DirectConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -336,7 +335,7 @@ const Messages = () => {
                 {directConversations.map((conv) => (
                   <div
                     key={conv.other_user_id}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                    className="flex items-start gap-3 p-3 rounded-lg cursor-pointer"
                     onClick={() => navigate(`/direct/${conv.other_user_id}`)}
                   >
                     <div className="relative flex-shrink-0">
@@ -393,7 +392,7 @@ const Messages = () => {
                 {sortedGroupChats.map((chat) => (
                   <div
                     key={chat.id}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                    className="flex items-start gap-3 p-3 rounded-lg cursor-pointer"
                     onClick={() => navigate(`/group-chat/${chat.id}`)}
                   >
                     <Avatar className="w-12 h-12 flex-shrink-0">
@@ -426,20 +425,6 @@ const Messages = () => {
           </TabsContent>
         </Tabs>
       </main>
-
-      <BottomNav
-        centerButton={
-          <CreateActivityDialog
-            selectedProvince=""
-            onActivityCreated={() => {}}
-            trigger={
-              <button className="p-3 -mt-2 rounded-full bg-primary text-primary-foreground shadow-lg">
-                <Plus className="w-6 h-6" />
-              </button>
-            }
-          />
-        }
-      />
     </div>
   );
 };

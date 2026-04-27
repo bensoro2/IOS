@@ -22,8 +22,8 @@ import DirectChat from "./pages/DirectChat";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
-import Reels from "./pages/Reels";
-import ReelsSearch from "./pages/ReelsSearch";
+// import Reels from "./pages/Reels";
+// import ReelsSearch from "./pages/ReelsSearch";
 import Notifications from "./pages/Notifications";
 import HelpCenter from "./pages/HelpCenter";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -120,8 +120,8 @@ const App = () => {
               <Route path="/group-chat/:id" element={<GroupChat />} />
               <Route path="/direct/:odirectId" element={<DirectChat />} />
               <Route path="/shop" element={<Shop />} />
-              <Route path="/reels" element={<Reels />} />
-              <Route path="/reels/search" element={<ReelsSearch />} />
+              {/* <Route path="/reels" element={<Reels />} /> */}
+              {/* <Route path="/reels/search" element={<ReelsSearch />} /> */}
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/help" element={<HelpCenter />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
