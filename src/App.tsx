@@ -77,6 +77,13 @@ const DeepLinkHandler = () => {
   return null;
 };
 
+const AppSetup = () => {
+  useSyncUserRow();
+  useMessageNotifications();
+  useFCMNotifications();
+  return null;
+};
+
 const TranslatingBanner = () => {
   const { isTranslating, translateProgress } = useLanguage();
   if (!isTranslating) return null;
@@ -94,10 +101,6 @@ const TranslatingBanner = () => {
 };
 
 const App = () => {
-  useSyncUserRow();
-  useMessageNotifications();
-  useFCMNotifications();
-
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
@@ -106,6 +109,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <AppSetup />
             <OAuthRedirectHandler />
             <DeepLinkHandler />
             <TranslatingBanner />
