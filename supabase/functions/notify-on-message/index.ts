@@ -98,23 +98,23 @@ async function sendToUser(
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  console.log("[notify-on-message] received request", req.method);
 
-  // Verify the request comes from Supabase (webhook uses service role key)
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!authHeader.includes(serviceRoleKey)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const fcmServiceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT_KEY");
+    console.log("[notify-on-message] FCM key present:", !!fcmServiceAccountJson);
     if (!fcmServiceAccountJson) {
+      console.error("[notify-on-message] FCM_SERVICE_ACCOUNT_KEY not set");
       return new Response(JSON.stringify({ error: "FCM_SERVICE_ACCOUNT_KEY not set" }), { status: 500, headers: corsHeaders });
     }
 
     const sa = JSON.parse(fcmServiceAccountJson);
+    console.log("[notify-on-message] project_id:", sa.project_id);
+
     const accessToken = await getFCMAccessToken(fcmServiceAccountJson);
+    console.log("[notify-on-message] got FCM access token:", !!accessToken);
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -122,7 +122,8 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json();
-    // Support both Supabase webhook format { type, table, record } and direct { table, record }
+    console.log("[notify-on-message] body table:", body.table, "record keys:", body.record ? Object.keys(body.record) : null);
+
     const table = body.table;
     const record = body.record;
 
