@@ -100,6 +100,13 @@ async function sendToUser(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Verify the request comes from Supabase (webhook uses service role key)
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!authHeader.includes(serviceRoleKey)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+  }
+
   try {
     const fcmServiceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT_KEY");
     if (!fcmServiceAccountJson) {
@@ -114,7 +121,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { table, record } = await req.json();
+    const body = await req.json();
+    // Support both Supabase webhook format { type, table, record } and direct { table, record }
+    const table = body.table;
+    const record = body.record;
 
     // ── DM ────────────────────────────────────────────────────────────────────
     if (table === "direct_messages") {

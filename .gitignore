@@ -37,3 +37,7 @@ DerivedData
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Firebase service account keys
+*firebase-adminsdk*.json
+
