@@ -34,7 +34,7 @@ import { getLocalizedProvince } from "@/components/ProvinceSelector";
 import { getLocalizedShopCategory } from "@/constants/shopCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { createNotification } from "@/hooks/useNotifications";
+import { createNotification, deleteFollowNotification } from "@/hooks/useNotifications";
  import {
    DropdownMenu,
    DropdownMenuContent,
@@ -358,6 +358,7 @@ const UserProfile = () => {
         setIsFollowing(false);
         setFollowerCount(prev => Math.max(0, prev - 1));
         toast.success(t("userProfile.unfollowed"));
+        deleteFollowNotification(userId, currentUserId);
       } else {
         // Follow
         const { error } = await supabase

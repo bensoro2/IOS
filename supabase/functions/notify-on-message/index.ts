@@ -81,11 +81,13 @@ async function sendToUser(
   channelId: string = "default"
 ) {
   const { data: tokens } = await adminClient.from("fcm_tokens").select("token").eq("user_id", userId);
+  console.log(`[sendToUser] userId=${userId} tokens=${tokens?.length ?? 0}`);
   if (!tokens?.length) return;
 
   const stale: string[] = [];
   for (const row of tokens) {
     const result = await sendFCM(row.token, title, body, url, tag, sa.project_id, accessToken, channelId);
+    console.log(`[sendToUser] FCM result:`, JSON.stringify(result));
     if (result?.error?.code === 404 || result?.error?.details?.includes?.("UNREGISTERED")) {
       stale.push(row.token);
     }

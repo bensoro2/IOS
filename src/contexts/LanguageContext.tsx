@@ -545,6 +545,8 @@ const translations: Record<string, Record<string, string>> = {
    // Notifications page
    "notifications.title": { th: "การแจ้งเตือน", en: "Notifications", ja: "通知", zh: "通知", ko: "알림", ru: "Уведомления" },
    "notifications.empty": { th: "ยังไม่มีการแจ้งเตือน", en: "No notifications yet", ja: "通知はまだありません", zh: "暂无通知", ko: "알림이 없습니다", ru: "Нет уведомлений" },
+   "notifications.clearAll": { th: "ล้างทั้งหมด", en: "Clear all", ja: "すべてクリア", zh: "清空全部", ko: "모두 지우기", ru: "Очистить всё" },
+   "notifications.clearAllConfirm": { th: "ล้างการแจ้งเตือนทั้งหมดหรือไม่?", en: "Clear all notifications?", ja: "すべての通知をクリアしますか？", zh: "清空所有通知？", ko: "모든 알림을 지우시겠습니까?", ru: "Очистить все уведомления?" },
    "notif.channelChat": { th: "แชท", en: "Chat", ja: "チャット", zh: "聊天", ko: "채팅", ru: "Чат" },
    "notif.channelChatDesc": { th: "ข้อความส่วนตัว", en: "Private messages", ja: "プライベートメッセージ", zh: "私信", ko: "개인 메시지", ru: "Личные сообщения" },
    "notif.channelGroup": { th: "กลุ่มแชท", en: "Group Chat", ja: "グループチャット", zh: "群聊", ko: "그룹 채팅", ru: "Групповой чат" },

@@ -3,10 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Heart, MessageCircle, UserPlus, Film } from "lucide-react";
+import { Loader2, Heart, MessageCircle, UserPlus, Film, X, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getDateLocale } from "@/lib/dateLocale";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface Notification {
   id: string;
@@ -59,7 +71,6 @@ const Notifications = () => {
         return;
       }
 
-      // Fetch actor info
       const actorIds = [...new Set(data.map((n: any) => n.actor_id))] as string[];
       const { data: usersData } = await supabase
         .from("users")
@@ -75,7 +86,6 @@ const Notifications = () => {
 
       setNotifications(enriched);
 
-      // Mark all as read
       await supabase
         .from("notifications")
         .update({ is_read: true } as any)
@@ -86,6 +96,18 @@ const Notifications = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteOne = async (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation();
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    await supabase.from("notifications").delete().eq("id", notificationId);
+  };
+
+  const handleClearAll = async () => {
+    if (!currentUserId) return;
+    setNotifications([]);
+    await supabase.from("notifications").delete().eq("user_id", currentUserId);
   };
 
   const getNotificationIcon = (type: string) => {
@@ -123,8 +145,30 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
-      <header className="flex items-center px-4 py-3 bg-card border-b border-border">
+      <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <h1 className="text-lg font-bold">{t("notifications.title")}</h1>
+        {notifications.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5">
+                <Trash2 className="w-4 h-4" />
+                {t("notifications.clearAll")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("notifications.clearAllConfirm")}</AlertDialogTitle>
+                <AlertDialogDescription />
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearAll} className="bg-destructive hover:bg-destructive/90">
+                  {t("notifications.clearAll")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </header>
 
       <ScrollArea className="flex-1">
@@ -139,39 +183,46 @@ const Notifications = () => {
         ) : (
           <div className="divide-y divide-border">
             {notifications.map((notification) => (
-              <button
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors ${
-                  !notification.is_read ? "bg-primary/5" : ""
-                }`}
-              >
-                <div className="relative">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={notification.actor?.avatar_url || ""} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {notification.actor?.display_name?.[0] || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
-                    {getNotificationIcon(notification.type)}
+              <div key={notification.id} className="relative group">
+                <button
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 pr-10 text-left hover:bg-muted/50 transition-colors ${
+                    !notification.is_read ? "bg-primary/5" : ""
+                  }`}
+                >
+                  <div className="relative">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={notification.actor?.avatar_url || ""} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                        {notification.actor?.display_name?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
+                      {getNotificationIcon(notification.type)}
+                    </div>
                   </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm">
-                    <span className="font-semibold">
-                      {notification.actor?.display_name || t("common.unknownUser")}
-                    </span>{" "}
-                    {getNotificationText(notification.type)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatDistanceToNow(new Date(notification.created_at), {
-                      addSuffix: true,
-                      locale: getDateLocale(language),
-                    })}
-                  </p>
-                </div>
-              </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                      <span className="font-semibold">
+                        {notification.actor?.display_name || t("common.unknownUser")}
+                      </span>{" "}
+                      {getNotificationText(notification.type)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatDistanceToNow(new Date(notification.created_at), {
+                        addSuffix: true,
+                        locale: getDateLocale(language),
+                      })}
+                    </p>
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => handleDeleteOne(e, notification.id)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         )}
