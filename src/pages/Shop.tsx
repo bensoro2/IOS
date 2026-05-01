@@ -5,10 +5,11 @@ import { ProvinceSelector } from "@/components/ProvinceSelector";
 import { CreateShopDialog } from "@/components/CreateShopDialog";
 import { ShopCard } from "@/components/ShopCard";
 import { ShopCategorySelector } from "@/components/ShopCategorySelector";
-import { 
-  Store, 
-  Plus, 
+import {
+  Store,
+  Plus,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryProvinces";
@@ -87,6 +88,9 @@ import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryP
        {/* Header */}
        <header className="flex items-center justify-between px-4 py-3 bg-card">
          <div className="flex items-center gap-3">
+           <button onClick={() => navigate(-1)} className="p-1 -ml-1 rounded-full hover:bg-muted transition-colors">
+             <ArrowLeft className="w-5 h-5" />
+           </button>
            <div className="p-2 rounded-full bg-muted">
              <Store className="w-5 h-5" />
            </div>

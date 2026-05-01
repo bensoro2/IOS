@@ -2,11 +2,10 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/hooks/useNotifications";
-import { CreateReelDialog } from "@/components/reels/CreateReelDialog";
 import { ReelCard } from "@/components/reels/ReelCard";
 import { ReelsSearchBar } from "@/components/reels/ReelsSearchBar";
 import { redirectToAuth } from "@/utils/authRedirect";
-import { Plus, Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 
@@ -400,15 +399,7 @@ const Reels = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <BottomNav
-        centerButton={
-          <CreateReelDialog onReelCreated={() => fetchReels(user?.id, filterUserId)}>
-            <button className="p-3 -mt-2 rounded-full bg-primary text-primary-foreground shadow-lg">
-              <Plus className="w-6 h-6" />
-            </button>
-          </CreateReelDialog>
-        }
-      />
+      <BottomNav />
     </div>
   );
 };

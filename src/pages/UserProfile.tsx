@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme, ThemeName } from "@/contexts/ThemeContext";
@@ -112,6 +112,7 @@ const UserProfile = () => {
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const followInFlightRef = useRef(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
    const [showBlockDialog, setShowBlockDialog] = useState(false);
    const [isBlocking, setIsBlocking] = useState(false);
@@ -343,6 +344,8 @@ const UserProfile = () => {
       return;
     }
 
+    if (followInFlightRef.current) return;
+    followInFlightRef.current = true;
     setIsFollowLoading(true);
     try {
       if (isFollowing) {
@@ -379,6 +382,7 @@ const UserProfile = () => {
       console.error("Follow error:", error);
       toast.error(t("common.error"));
     } finally {
+      followInFlightRef.current = false;
       setIsFollowLoading(false);
     }
   };

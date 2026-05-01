@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Heart, MessageCircle, UserPlus, Film, X, Trash2 } from "lucide-react";
+import { Loader2, Heart, MessageCircle, UserPlus, Film, X, Trash2, ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getDateLocale } from "@/lib/dateLocale";
@@ -146,7 +146,12 @@ const Notifications = () => {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
       <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
-        <h1 className="text-lg font-bold">{t("notifications.title")}</h1>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(-1)} className="p-1 -ml-1 rounded-full hover:bg-muted transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-lg font-bold">{t("notifications.title")}</h1>
+        </div>
         {notifications.length > 0 && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
