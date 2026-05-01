@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BottomNav } from "@/components/BottomNav";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
@@ -912,6 +913,7 @@ const Profile = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      <BottomNav />
     </div>
   );
 };

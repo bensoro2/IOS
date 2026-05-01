@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BottomNav } from "@/components/BottomNav";
 import { useNavigate } from "react-router-dom";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { supabase } from "@/integrations/supabase/client";
@@ -505,6 +506,7 @@ const Index = () => {
          currentUserId={user?.id}
          onRequestHandled={() => fetchIncomingRequests(user?.id)}
        />
+      <BottomNav />
     </div>
   );
 };

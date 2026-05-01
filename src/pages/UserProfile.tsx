@@ -486,8 +486,15 @@ const UserProfile = () => {
          });
  
        if (error) throw error;
- 
+
+       // Remove mutual follows when blocking
+       await Promise.all([
+         supabase.from("follows").delete().eq("follower_id", currentUserId).eq("following_id", userId),
+         supabase.from("follows").delete().eq("follower_id", userId).eq("following_id", currentUserId),
+       ]);
+
        setIsBlockedByMe(true);
+       setIsFollowing(false);
        toast.success(`${t("userProfile.blockedToast")} ${userData?.display_name || t("common.user")}`);
      } catch (error: any) {
        console.error("Error blocking user:", error);

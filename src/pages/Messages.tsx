@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { BottomNav } from "@/components/BottomNav";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -296,7 +297,7 @@ const Messages = () => {
         <h1 className="text-xl font-bold">{t("messages.title")}</h1>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20">
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-transparent border border-border rounded-full p-1 h-auto">
             <TabsTrigger 
@@ -425,6 +426,7 @@ const Messages = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <BottomNav />
     </div>
   );
 };
