@@ -17,22 +17,20 @@ export const createNotification = async ({
 
   try {
     if (type === "follow") {
-      // Remove any existing follow notification from this actor to prevent duplicates
-      await supabase
-        .from("notifications")
-        .delete()
-        .eq("user_id", userId)
-        .eq("actor_id", actorId)
-        .eq("type", "follow");
+      // Use DB function (SECURITY DEFINER) to bypass RLS and prevent duplicates atomically
+      await supabase.rpc("upsert_follow_notification", {
+        p_user_id: userId,
+        p_actor_id: actorId,
+      });
+    } else {
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        actor_id: actorId,
+        type,
+        reel_id: reelId || null,
+        comment_id: commentId || null,
+      } as any);
     }
-
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      actor_id: actorId,
-      type,
-      reel_id: reelId || null,
-      comment_id: commentId || null,
-    } as any);
   } catch (error) {
     console.error("Error creating notification:", error);
   }
@@ -40,12 +38,11 @@ export const createNotification = async ({
 
 export const deleteFollowNotification = async (userId: string, actorId: string) => {
   try {
-    await supabase
-      .from("notifications")
-      .delete()
-      .eq("user_id", userId)
-      .eq("actor_id", actorId)
-      .eq("type", "follow");
+    // Use DB function (SECURITY DEFINER) to bypass RLS
+    await supabase.rpc("delete_follow_notification", {
+      p_user_id: userId,
+      p_actor_id: actorId,
+    });
   } catch (error) {
     console.error("Error deleting follow notification:", error);
   }

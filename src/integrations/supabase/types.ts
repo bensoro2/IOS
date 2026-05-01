@@ -1195,6 +1195,14 @@ export type Database = {
         Returns: boolean
       }
       increment_reel_views: { Args: { _reel_id: string }; Returns: undefined }
+      upsert_follow_notification: {
+        Args: { p_user_id: string; p_actor_id: string }
+        Returns: undefined
+      }
+      delete_follow_notification: {
+        Args: { p_user_id: string; p_actor_id: string }
+        Returns: undefined
+      }
       is_blocked: {
         Args: { blocked: string; blocker: string }
         Returns: boolean
