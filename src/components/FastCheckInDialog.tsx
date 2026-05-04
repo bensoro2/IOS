@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { ACTIVITY_CATEGORIES, getSubCategoryById, getLocalizedName } from "@/constants/activityCategories";
+import { getLocalizedName } from "@/constants/activityCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useActivityCategoriesContext } from "@/contexts/ActivityCategoriesContext";
 
 interface FastCheckInDialogProps {
   trigger?: React.ReactNode;
@@ -27,6 +28,7 @@ export const FastCheckInDialog = ({ trigger, onCheckInComplete }: FastCheckInDia
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { language, t } = useLanguage();
+  const { categories, getSubCategoryById } = useActivityCategoriesContext();
   const [loading, setLoading] = useState(false);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [todayFastCheckins, setTodayFastCheckins] = useState<string[]>([]);
@@ -154,9 +156,9 @@ export const FastCheckInDialog = ({ trigger, onCheckInComplete }: FastCheckInDia
   };
 
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return ACTIVITY_CATEGORIES;
+    if (!searchQuery.trim()) return categories;
     const q = searchQuery.trim().toLowerCase();
-    return ACTIVITY_CATEGORIES
+    return categories
       .map((cat) => ({
         ...cat,
         subCategories: cat.subCategories.filter(
@@ -164,7 +166,7 @@ export const FastCheckInDialog = ({ trigger, onCheckInComplete }: FastCheckInDia
         ),
       }))
       .filter((cat) => cat.subCategories.length > 0);
-  }, [searchQuery, language]);
+  }, [searchQuery, language, categories]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

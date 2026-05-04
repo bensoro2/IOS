@@ -15,8 +15,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ACTIVITY_CATEGORIES, getSubCategoryById, getLocalizedName } from "@/constants/activityCategories";
+import { getLocalizedName } from "@/constants/activityCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useActivityCategoriesContext } from "@/contexts/ActivityCategoriesContext";
 
 interface ActivitySelectorProps {
   value: string;
@@ -26,6 +27,7 @@ interface ActivitySelectorProps {
 export const ActivitySelector = ({ value, onValueChange }: ActivitySelectorProps) => {
   const [open, setOpen] = useState(false);
   const { language, t } = useLanguage();
+  const { categories, getSubCategoryById } = useActivityCategoriesContext();
   const selectedActivity = getSubCategoryById(value);
 
   return (
@@ -53,7 +55,7 @@ export const ActivitySelector = ({ value, onValueChange }: ActivitySelectorProps
           <CommandInput placeholder={t("home.searchActivities")} />
           <CommandList className="max-h-[260px] overflow-y-auto">
             <CommandEmpty>{t("home.noActivitiesFound")}</CommandEmpty>
-            {ACTIVITY_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <CommandGroup 
                 key={category.id} 
                 heading={

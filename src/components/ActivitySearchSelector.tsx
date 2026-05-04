@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ACTIVITY_CATEGORIES, getSubCategoryById, getLocalizedName } from "@/constants/activityCategories";
+import { getLocalizedName } from "@/constants/activityCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useActivityCategoriesContext } from "@/contexts/ActivityCategoriesContext";
 
 interface ActivitySearchSelectorProps {
   value: string;
@@ -27,6 +28,7 @@ interface ActivitySearchSelectorProps {
 export const ActivitySearchSelector = ({ value, onValueChange }: ActivitySearchSelectorProps) => {
   const [open, setOpen] = useState(false);
   const { language, t } = useLanguage();
+  const { categories, getSubCategoryById } = useActivityCategoriesContext();
   const selectedActivity = getSubCategoryById(value);
 
   const handleClear = (e: React.MouseEvent) => {
@@ -62,7 +64,7 @@ export const ActivitySearchSelector = ({ value, onValueChange }: ActivitySearchS
            <CommandInput placeholder={t("home.typeToSearch")} />
            <CommandList>
              <CommandEmpty>{t("home.noActivitiesFound")}</CommandEmpty>
-            {ACTIVITY_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <CommandGroup 
                 key={category.id} 
                 heading={

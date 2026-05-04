@@ -12,8 +12,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { ACTIVITY_CATEGORIES, getSubCategoryById, getLocalizedName } from "@/constants/activityCategories";
+import { getLocalizedName } from "@/constants/activityCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useActivityCategoriesContext } from "@/contexts/ActivityCategoriesContext";
 
 interface CheckPlusDialogProps {
   trigger?: React.ReactNode;
@@ -24,6 +25,7 @@ export const CheckPlusDialog = ({ trigger, onCheckInComplete }: CheckPlusDialogP
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { language, t } = useLanguage();
+  const { categories, getSubCategoryById } = useActivityCategoriesContext();
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [myCode, setMyCode] = useState<string | null>(null);
@@ -101,15 +103,15 @@ export const CheckPlusDialog = ({ trigger, onCheckInComplete }: CheckPlusDialogP
   };
 
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return ACTIVITY_CATEGORIES;
+    if (!searchQuery.trim()) return categories;
     const q = searchQuery.trim().toLowerCase();
-    return ACTIVITY_CATEGORIES.map((cat) => ({
+    return categories.map((cat) => ({
       ...cat,
       subCategories: cat.subCategories.filter(
         (sub) => sub.name.toLowerCase().includes(q) || getLocalizedName(sub, language).toLowerCase().includes(q) || sub.emoji.includes(q)
       ),
     })).filter((cat) => cat.subCategories.length > 0);
-  }, [searchQuery, language]);
+  }, [searchQuery, language, categories]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

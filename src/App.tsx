@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ActivityCategoriesProvider } from "@/contexts/ActivityCategoriesContext";
 import { useSyncUserRow } from "@/hooks/useSyncUserRow";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { useCapacitorDeepLink } from "@/hooks/useCapacitorDeepLink";
@@ -104,6 +105,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
+      <ActivityCategoriesProvider>
       <ThemeProvider>
         <TooltipProvider>
           <Toaster />
@@ -141,6 +143,7 @@ const App = () => {
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
+      </ActivityCategoriesProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );
