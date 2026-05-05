@@ -47,8 +47,13 @@ workflows:
         script: |
           set -e
 
+          # Check env var is set
+          echo "GOOGLE_SERVICE_INFO_PLIST length: ${#GOOGLE_SERVICE_INFO_PLIST}"
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST" ]; then echo "ERROR: GOOGLE_SERVICE_INFO_PLIST is empty"; exit 1; fi
+
           # Write GoogleService-Info.plist and normalize format
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
+          echo "File size: $(wc -c < ios/App/App/GoogleService-Info.plist) bytes"
           plutil -convert xml1 ios/App/App/GoogleService-Info.plist
           echo "GoogleService-Info.plist written and validated"
 
