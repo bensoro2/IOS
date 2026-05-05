@@ -37,9 +37,11 @@ workflows:
           set -e
           rm -rf ios
           npx cap add ios
-          npx cap sync ios
-          echo "=== Podfile check after cap sync ==="
-          find ios -name "Podfile" -not -path "*/Pods/*" || echo "No Podfile found"
+          npx cap copy ios
+          echo "=== Listing ios/App ==="
+          ls ios/App/ || true
+          echo "=== Capacitor iOS template Podfile ==="
+          find node_modules/@capacitor/ios -name "Podfile" 2>/dev/null || true
 
       - name: Add GoogleService-Info.plist and Firebase Messaging pod
         script: |
@@ -49,14 +51,24 @@ workflows:
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
           echo "GoogleService-Info.plist written"
 
-          # Find Podfile (created by npx cap sync)
-          PODFILE=$(find ios -name "Podfile" -not -path "*/Pods/*" | head -1)
-          echo "Podfile found at: $PODFILE"
-          if [ -z "$PODFILE" ]; then echo "ERROR: Podfile not found after cap sync"; exit 1; fi
+          # Ensure Podfile exists — copy from Capacitor template if missing
+          PODFILE="ios/App/Podfile"
+          if [ ! -f "$PODFILE" ]; then
+            TEMPLATE=$(find node_modules/@capacitor/ios -name "Podfile" -not -path "*/Pods/*" 2>/dev/null | head -1)
+            echo "Template found: $TEMPLATE"
+            if [ -n "$TEMPLATE" ]; then
+              cp "$TEMPLATE" "$PODFILE"
+              echo "Copied Podfile from Capacitor template"
+            else
+              echo "ERROR: No Podfile and no template found"; exit 1
+            fi
+          fi
+          echo "Podfile ready:"
+          cat "$PODFILE"
 
-          # Add Firebase/Messaging if not already present
+          # Add Firebase/Messaging
           if ! grep -q "Firebase/Messaging" "$PODFILE"; then
-            python3 -c "f='$PODFILE'; c=open(f).read(); c=c.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\\n  # Add your Pods here\"); open(f,'w').write(c); print('Added Firebase/Messaging to Podfile')"
+            python3 -c "f='$PODFILE'; c=open(f).read(); c=c.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\\n  # Add your Pods here\"); open(f,'w').write(c); print('Added Firebase/Messaging')"
           fi
 
           # Add plist to Xcode project via ruby one-liner
@@ -70,7 +82,7 @@ workflows:
             echo "Firebase configured in AppDelegate.swift"
           fi
 
-          # Re-run pod install to include Firebase
+          # Run pod install
           cd ios/App && pod install && cd ../..
 
       - name: Generate app icons
