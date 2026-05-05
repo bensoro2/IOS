@@ -62,30 +62,12 @@ workflows:
           else
             # Add Firebase/Messaging to existing Podfile
             if ! grep -q "Firebase/Messaging" "$PODFILE"; then
-              python3 -c "
-content = open('$PODFILE').read()
-content = content.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\n  # Add your Pods here\")
-open('$PODFILE', 'w').write(content)
-print('Added Firebase/Messaging to Podfile')
-"
+              python3 -c "f='$PODFILE'; c=open(f).read(); c=c.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\\n  # Add your Pods here\"); open(f,'w').write(c); print('Added Firebase/Messaging')"
             fi
           fi
 
-          # Add plist to Xcode project
-          cd ios/App
-          ruby - << 'RUBY'
-          require 'xcodeproj'
-          project = Xcodeproj::Project.open('App.xcodeproj')
-          target = project.targets.first
-          group = project.main_group['App']
-          unless group.files.map(&:path).include?('GoogleService-Info.plist')
-            file_ref = group.new_file('GoogleService-Info.plist')
-            target.add_file_references([file_ref])
-            puts "Added GoogleService-Info.plist to Xcode project"
-          end
-          project.save
-          RUBY
-          cd ../..
+          # Add plist to Xcode project via ruby one-liner
+          cd ios/App && ruby -e "require 'xcodeproj'; p=Xcodeproj::Project.open('App.xcodeproj'); t=p.targets.first; g=p.main_group['App']; unless g.files.map(&:path).include?('GoogleService-Info.plist'); f=g.new_file('GoogleService-Info.plist'); t.add_file_references([f]); puts 'Added plist'; end; p.save" && cd ../..
 
           # Add Firebase initialization to AppDelegate.swift
           APPDELEGATE="ios/App/App/AppDelegate.swift"
