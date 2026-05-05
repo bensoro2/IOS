@@ -47,9 +47,10 @@ workflows:
         script: |
           set -e
 
-          # Write GoogleService-Info.plist
+          # Write GoogleService-Info.plist and normalize format
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
-          echo "GoogleService-Info.plist written"
+          plutil -convert xml1 ios/App/App/GoogleService-Info.plist
+          echo "GoogleService-Info.plist written and validated"
 
           # Add plist to Xcode project
           cd ios/App && ruby -e "require 'xcodeproj'; p=Xcodeproj::Project.open('App.xcodeproj'); t=p.targets.first; g=p.main_group['App']; unless g.files.map(&:path).include?('GoogleService-Info.plist'); f=g.new_file('GoogleService-Info.plist'); t.add_file_references([f]); puts 'Added plist'; end; p.save" && cd ../..
