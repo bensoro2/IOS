@@ -8,6 +8,8 @@ workflows:
     environment:
       xcode: latest
       node: 22
+      groups:
+        - firebase_secrets
       vars:
         BUNDLE_ID: "com.levelon.app"
         APPLE_TEAM_ID: $APPLE_TEAM_ID
