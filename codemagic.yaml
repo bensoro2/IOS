@@ -37,8 +37,8 @@ workflows:
           set -e
           rm -rf ios
           npx cap add ios
-          npx cap copy ios
-          echo "=== Podfile location check ==="
+          npx cap sync ios
+          echo "=== Podfile check after cap sync ==="
           find ios -name "Podfile" -not -path "*/Pods/*" || echo "No Podfile found"
 
       - name: Add GoogleService-Info.plist and Firebase Messaging pod
@@ -49,21 +49,14 @@ workflows:
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
           echo "GoogleService-Info.plist written"
 
-          # Find Podfile dynamically
+          # Find Podfile (created by npx cap sync)
           PODFILE=$(find ios -name "Podfile" -not -path "*/Pods/*" | head -1)
           echo "Podfile found at: $PODFILE"
+          if [ -z "$PODFILE" ]; then echo "ERROR: Podfile not found after cap sync"; exit 1; fi
 
-          # If Podfile not found, create it from base64
-          if [ -z "$PODFILE" ]; then
-            PODFILE="ios/App/Podfile"
-            echo "Creating Podfile at $PODFILE"
-            echo "cmVxdWlyZV9yZWxhdGl2ZSAnLi4vLi4vbm9kZV9tb2R1bGVzL0BjYXBhY2l0b3IvaW9zL3NjcmlwdHMvcG9kc19oZWxwZXJzJwoKcGxhdGZvcm0gOmlvcywgJzE0LjAnCnVzZV9mcmFtZXdvcmtzIQoKaW5zdGFsbCEgJ2NvY29hcG9kcycsIDpkaXNhYmxlX2lucHV0X291dHB1dF9wYXRocyA9PiB0cnVlCgpkZWYgY2FwYWNpdG9yX3BvZHMKICBwb2QgJ0NhcGFjaXRvcicsIDpwYXRoID0+ICcuLi8uLi9ub2RlX21vZHVsZXMvQGNhcGFjaXRvci9jb3JlJwogIHBvZCAnQ2FwYWNpdG9yQ29yZG92YScsIDpwYXRoID0+ICcuLi8uLi9ub2RlX21vZHVsZXMvQGNhcGFjaXRvci9jb3JlJwogIHBvZCAnQ2FwYWNpdG9yUHVzaE5vdGlmaWNhdGlvbnMnLCA6cGF0aCA9PiAnLi4vLi4vbm9kZV9tb2R1bGVzL0BjYXBhY2l0b3IvcHVzaC1ub3RpZmljYXRpb25zJwplbmQKCnRhcmdldCAnQXBwJyBkbwogIGNhcGFjaXRvcl9wb2RzCiAgcG9kICdGaXJlYmFzZS9NZXNzYWdpbmcnCmVuZAoKcG9zdF9pbnN0YWxsIGRvIHxpbnN0YWxsZXJ8CiAgYXNzZXJ0RGVwbG95bWVudFRhcmdldChpbnN0YWxsZXIpCmVuZAo=" | base64 --decode > "$PODFILE"
-            echo "Podfile created"
-          else
-            # Add Firebase/Messaging to existing Podfile
-            if ! grep -q "Firebase/Messaging" "$PODFILE"; then
-              python3 -c "f='$PODFILE'; c=open(f).read(); c=c.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\\n  # Add your Pods here\"); open(f,'w').write(c); print('Added Firebase/Messaging')"
-            fi
+          # Add Firebase/Messaging if not already present
+          if ! grep -q "Firebase/Messaging" "$PODFILE"; then
+            python3 -c "f='$PODFILE'; c=open(f).read(); c=c.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\\n  # Add your Pods here\"); open(f,'w').write(c); print('Added Firebase/Messaging to Podfile')"
           fi
 
           # Add plist to Xcode project via ruby one-liner
@@ -77,7 +70,7 @@ workflows:
             echo "Firebase configured in AppDelegate.swift"
           fi
 
-          # Install pods
+          # Re-run pod install to include Firebase
           cd ios/App && pod install && cd ../..
 
       - name: Generate app icons
