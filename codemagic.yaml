@@ -38,19 +38,58 @@ workflows:
           rm -rf ios
           npx cap add ios
           npx cap copy ios
+          echo "=== Podfile location check ==="
+          find ios -name "Podfile" -not -path "*/Pods/*" || echo "No Podfile found"
 
       - name: Add GoogleService-Info.plist and Firebase Messaging pod
         script: |
+          set -e
+
           # Write the plist file
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
           echo "GoogleService-Info.plist written"
 
-          # Add Firebase/Messaging to Podfile
-          PODFILE="ios/App/Podfile"
-          if ! grep -q "Firebase/Messaging" "$PODFILE"; then
-            sed -i '' "s/  # Add your Pods here/  pod 'Firebase\/Messaging'\n  # Add your Pods here/" "$PODFILE" || \
-            echo "  pod 'Firebase/Messaging'" >> "$PODFILE"
-            echo "Added Firebase/Messaging to Podfile"
+          # Find Podfile dynamically
+          PODFILE=$(find ios -name "Podfile" -not -path "*/Pods/*" | head -1)
+          echo "Podfile found at: $PODFILE"
+
+          # If Podfile not found, create it
+          if [ -z "$PODFILE" ]; then
+            PODFILE="ios/App/Podfile"
+            echo "Creating Podfile at $PODFILE"
+            cat > "$PODFILE" << 'PODEOF'
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '14.0'
+use_frameworks!
+
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/core'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/core'
+  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
+end
+
+target 'App' do
+  capacitor_pods
+  pod 'Firebase/Messaging'
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end
+PODEOF
+          else
+            # Add Firebase/Messaging to existing Podfile
+            if ! grep -q "Firebase/Messaging" "$PODFILE"; then
+              python3 -c "
+content = open('$PODFILE').read()
+content = content.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\n  # Add your Pods here\")
+open('$PODFILE', 'w').write(content)
+print('Added Firebase/Messaging to Podfile')
+"
+            fi
           fi
 
           # Add plist to Xcode project
@@ -60,7 +99,6 @@ workflows:
           project = Xcodeproj::Project.open('App.xcodeproj')
           target = project.targets.first
           group = project.main_group['App']
-          plist_path = 'App/GoogleService-Info.plist'
           unless group.files.map(&:path).include?('GoogleService-Info.plist')
             file_ref = group.new_file('GoogleService-Info.plist')
             target.add_file_references([file_ref])
