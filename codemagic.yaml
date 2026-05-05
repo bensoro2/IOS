@@ -43,47 +43,28 @@ workflows:
           echo "=== Capacitor iOS template Podfile ==="
           find node_modules/@capacitor/ios -name "Podfile" 2>/dev/null || true
 
-      - name: Add GoogleService-Info.plist and Firebase Messaging pod
+      - name: Add GoogleService-Info.plist and Firebase via SPM
         script: |
           set -e
 
-          # Write the plist file
+          # Write GoogleService-Info.plist
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
           echo "GoogleService-Info.plist written"
 
-          # Ensure Podfile exists — copy from Capacitor template if missing
-          PODFILE="ios/App/Podfile"
-          if [ ! -f "$PODFILE" ]; then
-            TEMPLATE=$(find node_modules/@capacitor/ios -name "Podfile" -not -path "*/Pods/*" 2>/dev/null | head -1)
-            echo "Template found: $TEMPLATE"
-            if [ -n "$TEMPLATE" ]; then
-              cp "$TEMPLATE" "$PODFILE"
-              echo "Copied Podfile from Capacitor template"
-            else
-              echo "ERROR: No Podfile and no template found"; exit 1
-            fi
-          fi
-          echo "Podfile ready:"
-          cat "$PODFILE"
-
-          # Add Firebase/Messaging
-          if ! grep -q "Firebase/Messaging" "$PODFILE"; then
-            python3 -c "f='$PODFILE'; c=open(f).read(); c=c.replace('  # Add your Pods here', \"  pod 'Firebase/Messaging'\\n  # Add your Pods here\"); open(f,'w').write(c); print('Added Firebase/Messaging')"
-          fi
-
-          # Add plist to Xcode project via ruby one-liner
+          # Add plist to Xcode project
           cd ios/App && ruby -e "require 'xcodeproj'; p=Xcodeproj::Project.open('App.xcodeproj'); t=p.targets.first; g=p.main_group['App']; unless g.files.map(&:path).include?('GoogleService-Info.plist'); f=g.new_file('GoogleService-Info.plist'); t.add_file_references([f]); puts 'Added plist'; end; p.save" && cd ../..
 
-          # Add Firebase initialization to AppDelegate.swift
-          APPDELEGATE="ios/App/App/AppDelegate.swift"
-          if ! grep -q "import Firebase" "$APPDELEGATE"; then
-            sed -i '' 's/import UIKit/import UIKit\nimport Firebase/' "$APPDELEGATE"
-            sed -i '' 's/return true/FirebaseApp.configure()\n    return true/' "$APPDELEGATE"
-            echo "Firebase configured in AppDelegate.swift"
-          fi
+          # Add Firebase/Messaging via Swift Package Manager (Capacitor 8 uses SPM, not CocoaPods)
+          echo "cmVxdWlyZSAneGNvZGVwcm9qJwpwcm9qZWN0ID0gWGNvZGVwcm9qOjpQcm9qZWN0Lm9wZW4oJ0FwcC54Y29kZXByb2onKQpyZWZzID0gcHJvamVjdC5yb290X29iamVjdC5wYWNrYWdlX3JlZmVyZW5jZXMKdW5sZXNzIHJlZnMuYW55PyB7IHxwfCBwLnJlc3BvbmRfdG8/KDpyZXBvc2l0b3J5VVJMKSAmJiBwLnJlcG9zaXRvcnlVUkwudG9fcy5pbmNsdWRlPygnZmlyZWJhc2UnKSB9CiAgcGtnID0gcHJvamVjdC5uZXcoWGNvZGVwcm9qOjpQcm9qZWN0OjpPYmplY3Q6OlhDUmVtb3RlU3dpZnRQYWNrYWdlUmVmZXJlbmNlKQogIHBrZy5yZXBvc2l0b3J5VVJMID0gJ2h0dHBzOi8vZ2l0aHViLmNvbS9maXJlYmFzZS9maXJlYmFzZS1pb3Mtc2RrJwogIHBrZy5yZXF1aXJlbWVudCA9IHsgJ2tpbmQnID0+ICd1cFRvTmV4dE1ham9yVmVyc2lvbicsICdtaW5pbXVtVmVyc2lvbicgPT4gJzExLjAuMCcgfQogIHJlZnMgPDwgcGtnCiAgdGFyZ2V0ID0gcHJvamVjdC50YXJnZXRzLmZpcnN0CiAgZGVwID0gcHJvamVjdC5uZXcoWGNvZGVwcm9qOjpQcm9qZWN0OjpPYmplY3Q6OlhDU3dpZnRQYWNrYWdlUHJvZHVjdERlcGVuZGVuY3kpCiAgZGVwLnBhY2thZ2UgPSBwa2cKICBkZXAucHJvZHVjdF9uYW1lID0gJ0ZpcmViYXNlTWVzc2FnaW5nJwogIHRhcmdldC5wYWNrYWdlX3Byb2R1Y3RfZGVwZW5kZW5jaWVzIDw8IGRlcAogIHByb2plY3Quc2F2ZQogIHB1dHMgJ0ZpcmViYXNlIFNQTSBwYWNrYWdlIGFkZGVkJwplbHNlCiAgcHV0cyAnRmlyZWJhc2UgYWxyZWFkeSBwcmVzZW50JwplbmQK" | base64 --decode > /tmp/add_firebase_spm.rb
+          cd ios/App && ruby /tmp/add_firebase_spm.rb && cd ../..
 
-          # Run pod install
-          cd ios/App && pod install && cd ../..
+          # Initialize Firebase in AppDelegate.swift
+          APPDELEGATE="ios/App/App/AppDelegate.swift"
+          if ! grep -q "FirebaseApp" "$APPDELEGATE"; then
+            sed -i '' 's/import UIKit/import UIKit\nimport FirebaseCore/' "$APPDELEGATE"
+            sed -i '' 's/return true/FirebaseApp.configure()\n    return true/' "$APPDELEGATE"
+            echo "Firebase initialized in AppDelegate.swift"
+          fi
 
       - name: Generate app icons
         script: |
@@ -181,7 +162,7 @@ workflows:
       - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace ios/App/App.xcworkspace \
+            --project ios/App/App.xcodeproj \
             --scheme App
 
     artifacts:
