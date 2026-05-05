@@ -39,6 +39,48 @@ workflows:
           npx cap add ios
           npx cap copy ios
 
+      - name: Add GoogleService-Info.plist and Firebase Messaging pod
+        script: |
+          # Write the plist file
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
+          echo "GoogleService-Info.plist written"
+
+          # Add Firebase/Messaging to Podfile
+          PODFILE="ios/App/Podfile"
+          if ! grep -q "Firebase/Messaging" "$PODFILE"; then
+            sed -i '' "s/  # Add your Pods here/  pod 'Firebase\/Messaging'\n  # Add your Pods here/" "$PODFILE" || \
+            echo "  pod 'Firebase/Messaging'" >> "$PODFILE"
+            echo "Added Firebase/Messaging to Podfile"
+          fi
+
+          # Add plist to Xcode project
+          cd ios/App
+          ruby - << 'RUBY'
+          require 'xcodeproj'
+          project = Xcodeproj::Project.open('App.xcodeproj')
+          target = project.targets.first
+          group = project.main_group['App']
+          plist_path = 'App/GoogleService-Info.plist'
+          unless group.files.map(&:path).include?('GoogleService-Info.plist')
+            file_ref = group.new_file('GoogleService-Info.plist')
+            target.add_file_references([file_ref])
+            puts "Added GoogleService-Info.plist to Xcode project"
+          end
+          project.save
+          RUBY
+          cd ../..
+
+          # Add Firebase initialization to AppDelegate.swift
+          APPDELEGATE="ios/App/App/AppDelegate.swift"
+          if ! grep -q "import Firebase" "$APPDELEGATE"; then
+            sed -i '' 's/import UIKit/import UIKit\nimport Firebase/' "$APPDELEGATE"
+            sed -i '' 's/return true/FirebaseApp.configure()\n    return true/' "$APPDELEGATE"
+            echo "Firebase configured in AppDelegate.swift"
+          fi
+
+          # Install pods
+          cd ios/App && pod install && cd ../..
+
       - name: Generate app icons
         script: |
           ICON_SRC="image.png"
@@ -135,7 +177,7 @@ workflows:
       - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --project ios/App/App.xcodeproj \
+            --workspace ios/App/App.xcworkspace \
             --scheme App
 
     artifacts:

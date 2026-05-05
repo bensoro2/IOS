@@ -1,12 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, X, ChevronRight, ArrowLeft, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { getLocalizedName, ActivityCategory } from "@/constants/activityCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useActivityCategoriesContext } from "@/contexts/ActivityCategoriesContext";
@@ -23,18 +17,30 @@ export const ActivitySearchSelector = ({ value, onValueChange }: ActivitySearchS
   const { language, t } = useLanguage();
   const { categories, getSubCategoryById } = useActivityCategoriesContext();
   const selectedActivity = getSubCategoryById(value);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+        setSelectedParent(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleFocus = () => setOpen(true);
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onValueChange("");
-  };
-
-  const handleOpen = (isOpen: boolean) => {
-    setOpen(isOpen);
-    if (!isOpen) {
-      setSearch("");
-      setSelectedParent(null);
-    }
+    setSearch("");
+    setSelectedParent(null);
+    inputRef.current?.focus();
   };
 
   const handleSelect = (subId: string) => {
@@ -44,7 +50,12 @@ export const ActivitySearchSelector = ({ value, onValueChange }: ActivitySearchS
     setSelectedParent(null);
   };
 
-  // When searching, show flat results across all categories
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setSelectedParent(null);
+    if (!open) setOpen(true);
+  };
+
   const searchResults = search.trim()
     ? categories.flatMap((cat) =>
         cat.subCategories
@@ -59,58 +70,52 @@ export const ActivitySearchSelector = ({ value, onValueChange }: ActivitySearchS
       )
     : [];
 
+  // Display value in input
+  const inputValue = open
+    ? search
+    : selectedActivity
+    ? `${selectedActivity.emoji} ${getLocalizedName(selectedActivity, language)}`
+    : "";
+
   return (
-    <Popover open={open} onOpenChange={handleOpen}>
-      <PopoverTrigger asChild>
-        <div className="relative cursor-pointer">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            placeholder={t("home.searchActivities")}
-            className="pl-10 pr-10 bg-card border-border cursor-pointer"
-            value={selectedActivity ? `${selectedActivity.emoji} ${getLocalizedName(selectedActivity, language)}` : ""}
-            readOnly
-          />
-          {value && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-              onClick={handleClear}
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          )}
-        </div>
-      </PopoverTrigger>
+    <div ref={containerRef} className="relative">
+      {/* Single search input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+        <input
+          ref={inputRef}
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          placeholder={t("home.searchActivities")}
+          className="w-full h-10 pl-10 pr-10 rounded-md border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        {(value || search) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+            onClick={handleClear}
+            type="button"
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        )}
+      </div>
 
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 overflow-hidden" align="start">
-        {/* Search input */}
-        <div className="flex items-center border-b border-border px-3 py-2 gap-2">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-          <input
-            autoFocus
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setSelectedParent(null); }}
-            placeholder={t("home.typeToSearch")}
-            className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        <div className="max-h-72 overflow-y-auto">
-          {/* Search results */}
-          {search.trim() ? (
-            searchResults.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">{t("home.noActivitiesFound")}</p>
-            ) : (
-              <div>
-                {searchResults.map((sub) => (
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg overflow-hidden">
+          <div className="max-h-72 overflow-y-auto">
+            {search.trim() ? (
+              /* Search results */
+              searchResults.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">{t("home.noActivitiesFound")}</p>
+              ) : (
+                searchResults.map((sub) => (
                   <button
                     key={sub.id}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSelect(sub.id)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors text-left"
                   >
@@ -121,37 +126,38 @@ export const ActivitySearchSelector = ({ value, onValueChange }: ActivitySearchS
                     </div>
                     {value === sub.id && <Check className="w-4 h-4 text-primary shrink-0" />}
                   </button>
-                ))}
-              </div>
-            )
-          ) : selectedParent ? (
-            /* Sub-category list */
-            <div>
-              <button
-                onClick={() => setSelectedParent(null)}
-                className="w-full flex items-center gap-2 px-4 py-2.5 border-b border-border hover:bg-muted/50 transition-colors text-sm text-muted-foreground"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>{getLocalizedName(selectedParent, language)}</span>
-              </button>
-              {selectedParent.subCategories.map((sub) => (
+                ))
+              )
+            ) : selectedParent ? (
+              /* Sub-category list */
+              <>
                 <button
-                  key={sub.id}
-                  onClick={() => handleSelect(sub.id)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors text-left"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setSelectedParent(null)}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 border-b border-border hover:bg-muted/50 transition-colors text-sm text-muted-foreground"
                 >
-                  <span className="text-lg">{sub.emoji}</span>
-                  <span className="flex-1 text-sm">{getLocalizedName(sub, language)}</span>
-                  {value === sub.id && <Check className="w-4 h-4 text-primary" />}
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>{getLocalizedName(selectedParent, language)}</span>
                 </button>
-              ))}
-            </div>
-          ) : (
-            /* Parent category list */
-            <div>
-              {categories.map((cat) => (
+                {selectedParent.subCategories.map((sub) => (
+                  <button
+                    key={sub.id}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelect(sub.id)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <span className="text-lg">{sub.emoji}</span>
+                    <span className="flex-1 text-sm">{getLocalizedName(sub, language)}</span>
+                    {value === sub.id && <Check className="w-4 h-4 text-primary" />}
+                  </button>
+                ))}
+              </>
+            ) : (
+              /* Parent category list */
+              categories.map((cat) => (
                 <button
                   key={cat.id}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setSelectedParent(cat)}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
                 >
@@ -160,11 +166,11 @@ export const ActivitySearchSelector = ({ value, onValueChange }: ActivitySearchS
                   <span className="text-xs text-muted-foreground mr-1">{cat.subCategories.length}</span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </button>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 };
