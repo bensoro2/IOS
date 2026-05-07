@@ -66,13 +66,8 @@ workflows:
           echo "cmVxdWlyZSAneGNvZGVwcm9qJwpwcm9qZWN0ID0gWGNvZGVwcm9qOjpQcm9qZWN0Lm9wZW4oJ0FwcC54Y29kZXByb2onKQpyZWZzID0gcHJvamVjdC5yb290X29iamVjdC5wYWNrYWdlX3JlZmVyZW5jZXMKdW5sZXNzIHJlZnMuYW55PyB7IHxwfCBwLnJlc3BvbmRfdG8/KDpyZXBvc2l0b3J5VVJMKSAmJiBwLnJlcG9zaXRvcnlVUkwudG9fcy5pbmNsdWRlPygnZmlyZWJhc2UnKSB9CiAgcGtnID0gcHJvamVjdC5uZXcoWGNvZGVwcm9qOjpQcm9qZWN0OjpPYmplY3Q6OlhDUmVtb3RlU3dpZnRQYWNrYWdlUmVmZXJlbmNlKQogIHBrZy5yZXBvc2l0b3J5VVJMID0gJ2h0dHBzOi8vZ2l0aHViLmNvbS9maXJlYmFzZS9maXJlYmFzZS1pb3Mtc2RrJwogIHBrZy5yZXF1aXJlbWVudCA9IHsgJ2tpbmQnID0+ICd1cFRvTmV4dE1ham9yVmVyc2lvbicsICdtaW5pbXVtVmVyc2lvbicgPT4gJzExLjAuMCcgfQogIHJlZnMgPDwgcGtnCiAgdGFyZ2V0ID0gcHJvamVjdC50YXJnZXRzLmZpcnN0CiAgZGVwID0gcHJvamVjdC5uZXcoWGNvZGVwcm9qOjpQcm9qZWN0OjpPYmplY3Q6OlhDU3dpZnRQYWNrYWdlUHJvZHVjdERlcGVuZGVuY3kpCiAgZGVwLnBhY2thZ2UgPSBwa2cKICBkZXAucHJvZHVjdF9uYW1lID0gJ0ZpcmViYXNlTWVzc2FnaW5nJwogIHRhcmdldC5wYWNrYWdlX3Byb2R1Y3RfZGVwZW5kZW5jaWVzIDw8IGRlcAogIHByb2plY3Quc2F2ZQogIHB1dHMgJ0ZpcmViYXNlIFNQTSBwYWNrYWdlIGFkZGVkJwplbHNlCiAgcHV0cyAnRmlyZWJhc2UgYWxyZWFkeSBwcmVzZW50JwplbmQK" | base64 --decode > /tmp/add_firebase_spm.rb
           cd ios/App && ruby /tmp/add_firebase_spm.rb && cd ../..
 
-          # Initialize Firebase in AppDelegate.swift
-          APPDELEGATE="ios/App/App/AppDelegate.swift"
-          if ! grep -q "FirebaseApp" "$APPDELEGATE"; then
-            sed -i '' 's/import UIKit/import UIKit\nimport FirebaseCore/' "$APPDELEGATE"
-            sed -i '' 's/return true/FirebaseApp.configure()\n    return true/' "$APPDELEGATE"
-            echo "Firebase initialized in AppDelegate.swift"
-          fi
+          # We use APNs directly — no Firebase initialization needed in AppDelegate
+          echo "Skipping Firebase AppDelegate init (using APNs direct delivery)"
 
       - name: Generate app icons
         script: |
