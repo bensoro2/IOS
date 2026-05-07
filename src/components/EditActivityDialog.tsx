@@ -191,6 +191,7 @@ export const EditActivityDialog = ({
                 placeholder={t("edit.participantsPlaceholder")}
                 value={participants}
                 onChange={(e) => setParticipants(e.target.value)}
+                className="w-full"
               />
             </div>
           </div>
