@@ -80,9 +80,16 @@ export function useFCMNotifications() {
       }
     );
 
+    // Register on mount
     register();
 
+    // Also register when user signs in (handles case where user wasn't logged in on mount)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") register();
+    });
+
     return () => {
+      subscription.unsubscribe();
       tokenListener.then((l) => l.remove());
       receivedListener.then((l) => l.remove());
       actionListener.then((l) => l.remove());
