@@ -5,6 +5,52 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ─── APNs helpers (iOS direct) ───────────────────────────────────────────────
+
+function isAPNsToken(token: string): boolean {
+  return /^[0-9a-f]{64}$/i.test(token);
+}
+
+async function getAPNsJWT(privateKeyPem: string, keyId: string, teamId: string): Promise<string> {
+  const pemContent = privateKeyPem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+    .replace(/-----END PRIVATE KEY-----/g, "")
+    .replace(/\n/g, "").trim();
+  const binaryDer = Uint8Array.from(atob(pemContent), (c) => c.charCodeAt(0));
+  const privateKey = await crypto.subtle.importKey(
+    "pkcs8", binaryDer.buffer,
+    { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]
+  );
+  const header = btoa(JSON.stringify({ alg: "ES256", kid: keyId })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  const payload = btoa(JSON.stringify({ iss: teamId, iat: Math.floor(Date.now() / 1000) })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  const signingInput = `${header}.${payload}`;
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, new TextEncoder().encode(signingInput));
+  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  return `${signingInput}.${sigB64}`;
+}
+
+async function sendAPNs(token: string, title: string, body: string, url: string, tag: string) {
+  const keyPem = Deno.env.get("APNS_PRIVATE_KEY") ?? "";
+  const keyId = Deno.env.get("APNS_KEY_ID") ?? "";
+  const teamId = Deno.env.get("APNS_TEAM_ID") ?? "";
+  const bundleId = Deno.env.get("APNS_BUNDLE_ID") ?? "com.levelon.app";
+  if (!keyPem || !keyId || !teamId) { console.error("[APNs] missing secrets"); return null; }
+
+  const jwt = await getAPNsJWT(keyPem, keyId, teamId);
+  const resp = await fetch(`https://api.push.apple.com/3/device/${token}`, {
+    method: "POST",
+    headers: {
+      "authorization": `bearer ${jwt}`,
+      "apns-topic": bundleId,
+      "apns-push-type": "alert",
+      "apns-priority": "10",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ aps: { alert: { title, body }, sound: "default" }, url: url ?? "/", tag: tag ?? "" }),
+  });
+  return { status: resp.status, body: await resp.text() };
+}
+
 // ─── FCM helpers ─────────────────────────────────────────────────────────────
 
 function base64urlEncode(data: string | Uint8Array): string {
@@ -86,10 +132,16 @@ async function sendToUser(
 
   const stale: string[] = [];
   for (const row of tokens) {
-    const result = await sendFCM(row.token, title, body, url, tag, sa.project_id, accessToken, channelId);
-    console.log(`[sendToUser] FCM result:`, JSON.stringify(result));
-    if (result?.error?.code === 404 || result?.error?.details?.includes?.("UNREGISTERED")) {
-      stale.push(row.token);
+    if (isAPNsToken(row.token)) {
+      // iOS APNs token — send via Apple APNs HTTP/2
+      const result = await sendAPNs(row.token, title, body, url, tag);
+      console.log(`[sendToUser] APNs result:`, JSON.stringify(result));
+      if (result?.status === 410 || result?.status === 400) stale.push(row.token);
+    } else {
+      // Android FCM token
+      const result = await sendFCM(row.token, title, body, url, tag, sa.project_id, accessToken, channelId);
+      console.log(`[sendToUser] FCM result:`, JSON.stringify(result));
+      if (result?.error?.code === 404 || result?.error?.details?.includes?.("UNREGISTERED")) stale.push(row.token);
     }
   }
   if (stale.length) {

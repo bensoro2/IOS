@@ -147,6 +147,10 @@ workflows:
           else:
               print('Microphone permission already exists')
 
+          # Disable Firebase swizzling so Capacitor can receive APNs token directly
+          plist['FirebaseAppDelegateProxyEnabled'] = False
+          print('Firebase swizzling disabled')
+
           with open(path, 'wb') as f:
               plistlib.dump(plist, f)
           print('Info.plist updated successfully')
