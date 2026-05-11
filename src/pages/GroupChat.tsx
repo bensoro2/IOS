@@ -54,6 +54,7 @@ const GroupChat = () => {
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [ownerId, setOwnerId] = useState<string | null>(null);
@@ -87,9 +88,13 @@ const GroupChat = () => {
   };
 
   const scrollToBottom = (instant = false) => {
-    messagesEndRef.current?.scrollIntoView({ 
-      behavior: instant ? "auto" : "smooth" 
-    });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (instant) {
+      container.scrollTop = container.scrollHeight;
+    } else {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    }
   };
 
   const initialScrollDone = useRef(false);
@@ -491,7 +496,7 @@ const GroupChat = () => {
         })
       );
 
-      setMessages(enrichedMessages);
+      setMessages(enrichedMessages as Message[]);
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -563,7 +568,7 @@ const GroupChat = () => {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === optimisticMessage.id
-              ? { ...data, user_display_name: t("common.you"), user_avatar: undefined }
+              ? { ...data, user_display_name: t("common.you"), user_avatar: undefined } as Message
               : msg
           )
         );
@@ -620,7 +625,7 @@ const GroupChat = () => {
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === optimisticMessage.id
-                  ? { ...data, user_display_name: t("common.you"), user_avatar: undefined }
+                  ? { ...data, user_display_name: t("common.you"), user_avatar: undefined } as Message
                   : msg
               )
             );
@@ -752,6 +757,7 @@ const GroupChat = () => {
 
       {/* Messages - Scrollable */}
       <main
+        ref={messagesContainerRef}
         className="flex-1 overflow-y-auto min-h-0"
         onTouchStart={handleSwipeStart}
         onTouchMove={handleSwipeMove}

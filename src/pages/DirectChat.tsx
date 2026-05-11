@@ -73,6 +73,7 @@ const DirectChat = () => {
   const onlineUsers = usePresence(currentUserId);
   const isOtherUserOnline = otherUser ? onlineUsers.has(otherUser.id) : false;
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Swipe gestures: right = reveal timestamps, left = go back to messages list
   const [swipeX, setSwipeX] = useState(0);
@@ -105,9 +106,13 @@ const DirectChat = () => {
   };
 
   const scrollToBottom = (instant = false) => {
-    messagesEndRef.current?.scrollIntoView({ 
-      behavior: instant ? "auto" : "smooth" 
-    });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (instant) {
+      container.scrollTop = container.scrollHeight;
+    } else {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    }
   };
 
   const initialScrollDone = useRef(false);
@@ -770,6 +775,7 @@ const DirectChat = () => {
 
       {/* Messages */}
       <main
+        ref={messagesContainerRef}
         className="flex-1 overflow-y-auto min-h-0"
         onTouchStart={handleSwipeStart}
         onTouchMove={handleSwipeMove}
