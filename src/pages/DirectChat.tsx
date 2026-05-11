@@ -125,7 +125,7 @@ const DirectChat = () => {
       setTimeout(() => scrollToBottom(true), 50);
     }).then(l => { willShow = l; });
     Keyboard.addListener("keyboardDidShow", () => {
-      scrollToBottom(true);
+      setTimeout(() => scrollToBottom(true), 100);
     }).then(l => { didShow = l; });
     return () => {
       willShow?.remove();
