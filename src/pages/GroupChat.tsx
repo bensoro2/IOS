@@ -95,7 +95,9 @@ const GroupChat = () => {
   // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0 && !isLoading) {
-      scrollToBottom();
+      scrollToBottom(true);
+      setTimeout(() => scrollToBottom(true), 300);
+      setTimeout(() => scrollToBottom(true), 800);
     }
   }, [messages, isLoading]);
 
