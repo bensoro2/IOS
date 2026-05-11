@@ -92,12 +92,18 @@ const GroupChat = () => {
     });
   };
 
+  const initialScrollDone = useRef(false);
   // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0 && !isLoading) {
-      scrollToBottom(true);
-      setTimeout(() => scrollToBottom(true), 300);
-      setTimeout(() => scrollToBottom(true), 800);
+      if (!initialScrollDone.current) {
+        initialScrollDone.current = true;
+        scrollToBottom(true);
+        setTimeout(() => scrollToBottom(true), 400);
+        setTimeout(() => scrollToBottom(true), 900);
+      } else {
+        scrollToBottom(true);
+      }
     }
   }, [messages, isLoading]);
 

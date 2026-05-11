@@ -110,12 +110,19 @@ const DirectChat = () => {
     });
   };
 
+  const initialScrollDone = useRef(false);
   useEffect(() => {
     if (messages.length > 0 && !isLoading) {
-      // Scroll หลายรอบเพื่อรอรูปภาพ/avatar โหลดเสร็จ
-      scrollToBottom(true);
-      setTimeout(() => scrollToBottom(true), 300);
-      setTimeout(() => scrollToBottom(true), 800);
+      if (!initialScrollDone.current) {
+        // Initial load — scroll หลายรอบเพื่อรอรูปภาพ/avatar โหลดเสร็จ
+        initialScrollDone.current = true;
+        scrollToBottom(true);
+        setTimeout(() => scrollToBottom(true), 400);
+        setTimeout(() => scrollToBottom(true), 900);
+      } else {
+        // New message arrived — scroll ครั้งเดียวพอ
+        scrollToBottom(true);
+      }
     }
   }, [messages, isLoading]);
 
