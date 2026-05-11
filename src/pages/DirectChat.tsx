@@ -116,21 +116,22 @@ const DirectChat = () => {
     }
   }, [messages, isLoading]);
 
-  // Scroll to bottom เมื่อ keyboard เปิด เพื่อไม่ให้ message ล่าสุดโดนบัง
+  // Scroll to bottom เมื่อ keyboard เปิด — ใช้ visualViewport API ซึ่งตอบสนองโดยตรงกับ visible area จริงบน iOS
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-    let willShow: any;
-    let didShow: any;
-    Keyboard.addListener("keyboardWillShow", () => {
-      setTimeout(() => scrollToBottom(true), 50);
-    }).then(l => { willShow = l; });
-    Keyboard.addListener("keyboardDidShow", () => {
-      setTimeout(() => scrollToBottom(true), 100);
-    }).then(l => { didShow = l; });
-    return () => {
-      willShow?.remove();
-      didShow?.remove();
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let lastHeight = vv.height;
+    const handleResize = () => {
+      if (vv.height < lastHeight) {
+        // keyboard appeared
+        setTimeout(() => scrollToBottom(true), 50);
+        setTimeout(() => scrollToBottom(true), 200);
+      }
+      lastHeight = vv.height;
     };
+    vv.addEventListener("resize", handleResize);
+    return () => vv.removeEventListener("resize", handleResize);
   }, []);
 
   // Mark DMs from other user as read
