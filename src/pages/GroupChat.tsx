@@ -102,11 +102,18 @@ const GroupChat = () => {
   // Scroll to bottom เมื่อ keyboard เปิด
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-    let listener: any;
+    let willShow: any;
+    let didShow: any;
     Keyboard.addListener("keyboardWillShow", () => {
-      setTimeout(() => scrollToBottom(true), 100);
-    }).then(l => { listener = l; });
-    return () => { listener?.remove(); };
+      setTimeout(() => scrollToBottom(true), 50);
+    }).then(l => { willShow = l; });
+    Keyboard.addListener("keyboardDidShow", () => {
+      scrollToBottom(true);
+    }).then(l => { didShow = l; });
+    return () => {
+      willShow?.remove();
+      didShow?.remove();
+    };
   }, []);
 
   // Mark group chat as read
