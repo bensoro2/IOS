@@ -26,34 +26,36 @@ export function useFCMNotifications() {
       DBG("FCM [4] permission=" + permResult.receive);
       if (permResult.receive !== "granted") return;
 
-      // สร้าง Notification Channels แยกตามประเภท
-      await PushNotifications.createChannel({
-        id: "messages",
-        name: t("notif.channelChat"),
-        description: t("notif.channelChatDesc"),
-        importance: 5,
-        visibility: 1,
-        sound: "default",
-        vibration: true,
-      });
-      await PushNotifications.createChannel({
-        id: "group_chat",
-        name: t("notif.channelGroup"),
-        description: t("notif.channelGroupDesc"),
-        importance: 4,
-        visibility: 1,
-        sound: "default",
-        vibration: true,
-      });
-      await PushNotifications.createChannel({
-        id: "social",
-        name: t("notif.channelSocial"),
-        description: t("notif.channelSocialDesc"),
-        importance: 3,
-        visibility: 1,
-        sound: "default",
-        vibration: false,
-      });
+      // createChannel is Android-only — skip on iOS to avoid crash
+      if (Capacitor.getPlatform() === "android") {
+        await PushNotifications.createChannel({
+          id: "messages",
+          name: t("notif.channelChat"),
+          description: t("notif.channelChatDesc"),
+          importance: 5,
+          visibility: 1,
+          sound: "default",
+          vibration: true,
+        });
+        await PushNotifications.createChannel({
+          id: "group_chat",
+          name: t("notif.channelGroup"),
+          description: t("notif.channelGroupDesc"),
+          importance: 4,
+          visibility: 1,
+          sound: "default",
+          vibration: true,
+        });
+        await PushNotifications.createChannel({
+          id: "social",
+          name: t("notif.channelSocial"),
+          description: t("notif.channelSocialDesc"),
+          importance: 3,
+          visibility: 1,
+          sound: "default",
+          vibration: false,
+        });
+      }
 
       DBG("FCM [5] calling PushNotifications.register()");
       await PushNotifications.register();
