@@ -48,10 +48,39 @@ workflows:
       - name: Setup APNs push notifications
         script: |
           set -e
-          # No Firebase needed — using APNs HTTP/2 directly on the server side
-          # Capacitor's @capacitor/push-notifications handles APNs registration natively
-          echo "APNs setup: relying on native Capacitor push notification registration"
-          echo "No Firebase SDK added — eliminates all Firebase interference"
+
+          # Create App.entitlements with aps-environment=production
+          cat > "ios/App/App/App.entitlements" << 'ENTITLEMENTS'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>aps-environment</key>
+              <string>production</string>
+          </dict>
+          </plist>
+          ENTITLEMENTS
+          echo "Created App.entitlements:"
+          cat "ios/App/App/App.entitlements"
+
+          # Link entitlements file into Xcode project build settings
+          python3 - << 'PYEOF'
+          import re
+          pbxproj = 'ios/App/App.xcodeproj/project.pbxproj'
+          with open(pbxproj, 'r') as f:
+              content = f.read()
+          updated = re.sub(
+              r'(PRODUCT_BUNDLE_IDENTIFIER = com\.levelon\.app;)',
+              r'\1\n\t\t\t\tCODE_SIGN_ENTITLEMENTS = App/App.entitlements;',
+              content
+          )
+          if updated == content:
+              print("WARNING: PRODUCT_BUNDLE_IDENTIFIER not found — entitlements not linked")
+          else:
+              with open(pbxproj, 'w') as f:
+                  f.write(updated)
+              print("Successfully linked App.entitlements to Xcode project")
+          PYEOF
 
       - name: Generate app icons
         script: |
