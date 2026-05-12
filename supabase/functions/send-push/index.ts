@@ -6,6 +6,52 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── APNs helpers (iOS direct) ───────────────────────────────────────────────
+
+function isAPNsToken(token: string): boolean {
+  return /^[0-9a-f]{64}$/i.test(token);
+}
+
+async function getAPNsJWT(privateKeyPem: string, keyId: string, teamId: string): Promise<string> {
+  const pemContent = privateKeyPem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+    .replace(/-----END PRIVATE KEY-----/g, "")
+    .replace(/\n/g, "").trim();
+  const binaryDer = Uint8Array.from(atob(pemContent), (c) => c.charCodeAt(0));
+  const privateKey = await crypto.subtle.importKey(
+    "pkcs8", binaryDer.buffer,
+    { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]
+  );
+  const header = btoa(JSON.stringify({ alg: "ES256", kid: keyId })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  const payload = btoa(JSON.stringify({ iss: teamId, iat: Math.floor(Date.now() / 1000) })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  const signingInput = `${header}.${payload}`;
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, new TextEncoder().encode(signingInput));
+  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  return `${signingInput}.${sigB64}`;
+}
+
+async function sendAPNs(token: string, title: string, body: string, url: string, tag: string): Promise<{ status: number; body: string } | null> {
+  const keyPem = Deno.env.get("APNS_PRIVATE_KEY") ?? "";
+  const keyId = Deno.env.get("APNS_KEY_ID") ?? "";
+  const teamId = Deno.env.get("APNS_TEAM_ID") ?? "";
+  const bundleId = Deno.env.get("APNS_BUNDLE_ID") ?? "com.levelon.app";
+  if (!keyPem || !keyId || !teamId) { console.error("[APNs] missing secrets"); return null; }
+
+  const jwt = await getAPNsJWT(keyPem, keyId, teamId);
+  const resp = await fetch(`https://api.push.apple.com/3/device/${token}`, {
+    method: "POST",
+    headers: {
+      "authorization": `bearer ${jwt}`,
+      "apns-topic": bundleId,
+      "apns-push-type": "alert",
+      "apns-priority": "10",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ aps: { alert: { title, body }, sound: "default" }, url: url ?? "/", tag: tag ?? "" }),
+  });
+  return { status: resp.status, body: await resp.text() };
+}
+
 // ─── Web Push (browser/PWA) ───────────────────────────────────────────────────
 
 async function sendWebPush(
@@ -161,18 +207,32 @@ Deno.serve(async (req) => {
 
     // ── 1. ส่งผ่าน FCM (native) ──────────────────────────────────────────────
     const fcmServiceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT_KEY");
+    const { data: allTokens } = await adminClient
+      .from("fcm_tokens")
+      .select("token")
+      .eq("user_id", userId);
+
+    const staleTokens: string[] = [];
+
+    // ── 1a. APNs tokens (iOS) ────────────────────────────────────────────────
+    for (const row of (allTokens ?? []).filter((r: { token: string }) => isAPNsToken(r.token))) {
+      try {
+        const result = await sendAPNs(row.token, title, body, url ?? "/", tag ?? "");
+        console.log("APNs result:", JSON.stringify(result));
+        if (result?.status === 410 || result?.status === 400) staleTokens.push(row.token);
+        else if (result) sent++;
+      } catch (err) {
+        console.error("APNs send error:", err);
+      }
+    }
+
+    // ── 1b. FCM tokens (Android) ─────────────────────────────────────────────
     if (fcmServiceAccountJson) {
       try {
         const sa = JSON.parse(fcmServiceAccountJson);
         const accessToken = await getFCMAccessToken(fcmServiceAccountJson);
 
-        const { data: fcmTokens } = await adminClient
-          .from("fcm_tokens")
-          .select("token")
-          .eq("user_id", userId);
-
-        const staleTokens: string[] = [];
-        for (const row of fcmTokens ?? []) {
+        for (const row of (allTokens ?? []).filter((r: { token: string }) => !isAPNsToken(r.token))) {
           try {
             const result = await sendFCMMessage(
               row.token, title, body, url, tag, sa.project_id, accessToken
@@ -186,14 +246,14 @@ Deno.serve(async (req) => {
             console.error("FCM send error:", err);
           }
         }
-
-        if (staleTokens.length > 0) {
-          await adminClient.from("fcm_tokens").delete()
-            .eq("user_id", userId).in("token", staleTokens);
-        }
       } catch (err) {
         console.error("FCM setup error:", err);
       }
+    }
+
+    if (staleTokens.length > 0) {
+      await adminClient.from("fcm_tokens").delete()
+        .eq("user_id", userId).in("token", staleTokens);
     }
 
     // ── 2. ส่งผ่าน Web Push (browser/PWA) ───────────────────────────────────
