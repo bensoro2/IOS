@@ -167,6 +167,45 @@ workflows:
       - name: Use provisioning profiles
         script: xcode-project use-profiles
 
+      - name: Inject APNs entitlements (after profiles)
+        script: |
+          set -e
+          ENTITLEMENTS="ios/App/App/App.entitlements"
+
+          python3 - << 'PYEOF'
+          import plistlib, os, re
+
+          # Write entitlements file
+          ent = {"aps-environment": "production"}
+          path = "ios/App/App/App.entitlements"
+          with open(path, "wb") as f:
+              plistlib.dump(ent, f)
+          print("Wrote", path)
+          with open(path, "rb") as f:
+              print(f.read().decode())
+
+          # Patch pbxproj: set CODE_SIGN_ENTITLEMENTS on every build config for the App target
+          pbx = "ios/App/App.xcodeproj/project.pbxproj"
+          with open(pbx, "r") as f:
+              content = f.read()
+
+          # Remove any existing CODE_SIGN_ENTITLEMENTS lines first (avoid duplicates)
+          content = re.sub(r'\n\s*CODE_SIGN_ENTITLEMENTS = [^;]*;', '', content)
+
+          # Insert after each PRODUCT_BUNDLE_IDENTIFIER = com.levelon.app;
+          content = re.sub(
+              r'(PRODUCT_BUNDLE_IDENTIFIER = com\.levelon\.app;)',
+              r'\1\n\t\t\t\tCODE_SIGN_ENTITLEMENTS = App/App.entitlements;',
+              content
+          )
+
+          with open(pbx, "w") as f:
+              f.write(content)
+
+          count = content.count("CODE_SIGN_ENTITLEMENTS = App/App.entitlements")
+          print(f"CODE_SIGN_ENTITLEMENTS injected in {count} build config(s)")
+          PYEOF
+
       - name: Set build number
         script: |
           BUILD_NUM=$(date +%Y%m%d%H%M)
