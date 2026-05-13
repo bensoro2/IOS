@@ -351,11 +351,12 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
               ✕
             </button>
           </div>
-          <div className="flex-1 flex items-center justify-center overflow-hidden px-2 pb-4">
+          <div className="flex-1 flex items-center justify-center px-2 pb-4" style={{ minHeight: 0 }}>
             <img
               src={lightboxUrl}
               alt="Full size"
-              className="max-w-full max-h-full object-contain"
+              className="w-auto object-contain rounded-lg"
+              style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 80px)' }}
               onClick={(e) => e.stopPropagation()}
             />
           </div>

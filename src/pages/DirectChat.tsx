@@ -463,6 +463,31 @@ const DirectChat = () => {
     }
   };
 
+  // Re-fetch display names for messages still showing as unknown user
+  useEffect(() => {
+    const unknown = t("common.unknownUser");
+    const missingIds = [...new Set(
+      messages
+        .filter(m => m.user_display_name === unknown || !m.user_display_name)
+        .map(m => m.user_id)
+    )];
+    if (!missingIds.length) return;
+
+    supabase
+      .from("users")
+      .select("id, display_name, avatar_url")
+      .in("id", missingIds)
+      .then(({ data }) => {
+        if (!data?.length) return;
+        const map = new Map(data.map(u => [u.id, u]));
+        setMessages(prev => prev.map(m => {
+          const u = map.get(m.user_id);
+          if (!u) return m;
+          return { ...m, user_display_name: u.display_name || m.user_display_name, user_avatar: u.avatar_url || m.user_avatar };
+        }));
+      });
+  }, [messages.length, t]);
+
   const uploadMedia = async (file: Blob, type: "image" | "audio"): Promise<string | null> => {
     if (!currentUserId) return null;
 
