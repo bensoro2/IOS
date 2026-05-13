@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     PushNotifications: {
-      presentationOptions: ["badge", "sound"],
+      presentationOptions: ["badge"],
     },
     Keyboard: {
       resize: "native",

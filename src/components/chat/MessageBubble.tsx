@@ -339,21 +339,26 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
       {/* Lightbox */}
       {lightboxUrl && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           onClick={() => setLightboxUrl(null)}
         >
-          <button
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none z-10"
-            onClick={() => setLightboxUrl(null)}
-          >
-            ✕
-          </button>
-          <img
-            src={lightboxUrl}
-            alt="Full size"
-            className="max-w-full max-h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="flex justify-end px-4 py-3 flex-shrink-0">
+            <button
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none"
+              onClick={() => setLightboxUrl(null)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center overflow-hidden px-2 pb-4">
+            <img
+              src={lightboxUrl}
+              alt="Full size"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
 

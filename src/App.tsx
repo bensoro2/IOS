@@ -10,6 +10,7 @@ import { useSyncUserRow } from "@/hooks/useSyncUserRow";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { useCapacitorDeepLink } from "@/hooks/useCapacitorDeepLink";
 import { useFCMNotifications } from "@/hooks/useFCMNotifications";
+import { useDisplayNamePrompt } from "@/hooks/useDisplayNamePrompt";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -82,7 +83,8 @@ const AppSetup = () => {
   useSyncUserRow();
   useMessageNotifications();
   useFCMNotifications();
-  return null;
+  const { Prompt } = useDisplayNamePrompt();
+  return <Prompt />;
 };
 
 const TranslatingBanner = () => {
