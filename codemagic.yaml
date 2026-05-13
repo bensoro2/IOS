@@ -45,6 +45,40 @@ workflows:
           echo "=== Capacitor iOS template Podfile ==="
           find node_modules/@capacitor/ios -name "Podfile" 2>/dev/null || true
 
+      - name: Patch AppDelegate for push notifications
+        script: |
+          set -e
+          APPDELEGATE="ios/App/App/AppDelegate.swift"
+
+          # Add push notification delegate methods if not already present
+          if ! grep -q "capacitorDidRegisterForRemoteNotifications" "$APPDELEGATE"; then
+            python3 - << 'PYEOF'
+          with open("ios/App/App/AppDelegate.swift", "r") as f:
+              content = f.read()
+
+          push_methods = """
+              func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+                  NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+              }
+
+              func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+                  NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+              }
+          """
+
+          # Insert before the last closing brace of the class
+          patched = content.rstrip().rstrip("}")  + push_methods + "}\n"
+          with open("ios/App/App/AppDelegate.swift", "w") as f:
+              f.write(patched)
+          print("AppDelegate patched successfully")
+          PYEOF
+          else
+            echo "AppDelegate already has push notification methods"
+          fi
+
+          echo "=== AppDelegate.swift ==="
+          cat "$APPDELEGATE"
+
       - name: Setup APNs push notifications
         script: |
           set -e
