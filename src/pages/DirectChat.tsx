@@ -465,6 +465,7 @@ const DirectChat = () => {
 
   // Re-fetch display names for messages still showing as unknown user
   useEffect(() => {
+    if (isLoading) return;
     const unknown = t("common.unknownUser");
     const missingIds = [...new Set(
       messages
@@ -486,7 +487,7 @@ const DirectChat = () => {
           return { ...m, user_display_name: u.display_name || m.user_display_name, user_avatar: u.avatar_url || m.user_avatar };
         }));
       });
-  }, [messages.length, t]);
+  }, [isLoading, t]);
 
   const uploadMedia = async (file: Blob, type: "image" | "audio"): Promise<string | null> => {
     if (!currentUserId) return null;

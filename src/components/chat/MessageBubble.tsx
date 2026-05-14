@@ -339,27 +339,26 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
       {/* Lightbox */}
       {lightboxUrl && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+          className="fixed inset-0 z-50 bg-black/90"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           onClick={() => setLightboxUrl(null)}
         >
-          <div className="flex justify-end px-4 py-3 flex-shrink-0">
-            <button
-              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none"
-              onClick={() => setLightboxUrl(null)}
-            >
-              ✕
-            </button>
-          </div>
-          <div className="flex-1 flex items-center justify-center px-2 pb-4" style={{ minHeight: 0 }}>
-            <img
-              src={lightboxUrl}
-              alt="Full size"
-              className="w-auto object-contain rounded-lg"
-              style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 80px)' }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none"
+            style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+            onClick={() => setLightboxUrl(null)}
+          >
+            ✕
+          </button>
+          {/* Image fills entire overlay, object-contain keeps aspect ratio */}
+          <img
+            src={lightboxUrl}
+            alt="Full size"
+            className="absolute inset-0 w-full h-full object-contain p-4"
+            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
 
