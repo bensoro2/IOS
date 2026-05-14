@@ -340,25 +340,29 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
       {lightboxUrl && (
         <div
           className="fixed inset-0 z-50 bg-black/90"
-          style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           onClick={() => setLightboxUrl(null)}
         >
-          {/* Close button */}
+          {/* Image — inset-0 with padding top to clear close button */}
+          <img
+            src={lightboxUrl}
+            alt="Full size"
+            className="absolute inset-0 w-full h-full object-contain"
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 60px)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+              paddingLeft: '16px',
+              paddingRight: '16px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          {/* Close button — after img in DOM so it renders on top */}
           <button
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none"
+            className="absolute right-4 z-10 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none"
             style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
             onClick={() => setLightboxUrl(null)}
           >
             ✕
           </button>
-          {/* Image fills entire overlay, object-contain keeps aspect ratio */}
-          <img
-            src={lightboxUrl}
-            alt="Full size"
-            className="absolute inset-0 w-full h-full object-contain p-4"
-            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}
-            onClick={(e) => e.stopPropagation()}
-          />
         </div>
       )}
 
