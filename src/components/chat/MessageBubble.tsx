@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Play, Pause, Reply, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -225,6 +226,15 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
   const { t } = useLanguage();
   const [showMenu, setShowMenu] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  // Lock body scroll while lightbox is open so underlying chat cannot scroll
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [lightboxUrl]);
+
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const reelIdInContent = message.content ? (message.content.match(REEL_URL_REGEX)?.[1] ?? null) : null;
 
@@ -336,34 +346,61 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
         </div>
       </div>
 
-      {/* Lightbox */}
-      {lightboxUrl && (
+      {/* Lightbox — portalled to document.body so CSS transform on parent chat
+          container does not break position:fixed stacking context on iOS */}
+      {lightboxUrl && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-black/90"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'black',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            touchAction: 'none',
+          }}
           onClick={() => setLightboxUrl(null)}
         >
-          {/* Image — inset-0 with padding top to clear close button */}
           <img
             src={lightboxUrl}
             alt="Full size"
-            className="absolute inset-0 w-full h-full object-contain"
             style={{
-              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 60px)',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)',
               paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
               paddingLeft: '16px',
               paddingRight: '16px',
             }}
             onClick={(e) => e.stopPropagation()}
           />
-          {/* Close button — after img in DOM so it renders on top */}
+          {/* Close button — fixed relative to viewport via portal */}
           <button
-            className="absolute right-4 z-10 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-xl leading-none"
-            style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+            style={{
+              position: 'absolute',
+              top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+              right: '16px',
+              zIndex: 10,
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              fontSize: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
             onClick={() => setLightboxUrl(null)}
           >
             ✕
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Action Menu (bottom sheet) */}
