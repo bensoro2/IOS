@@ -41,11 +41,14 @@ const JoinGroup = () => {
     const isShortCode = raw.length <= 12 && !raw.includes("-");
     if (!isShortCode) return raw;
 
-    // UUID is stored as UUID type in Postgres — must cast to text for prefix search
+    // UUID range query — no text cast needed, native UUID comparison works
+    // Code is the first 8 hex chars of UUID (= first UUID segment before the dash)
+    const prefix = raw.toLowerCase();
     const { data, error } = await supabase
       .from("activity_group_chats")
       .select("id")
-      .filter("id::text", "ilike", `${raw.toLowerCase()}%`)
+      .gte("id", `${prefix}-0000-0000-0000-000000000000`)
+      .lte("id", `${prefix}-ffff-ffff-ffff-ffffffffffff`)
       .limit(1);
 
     if (error || !data || data.length === 0) return null;
