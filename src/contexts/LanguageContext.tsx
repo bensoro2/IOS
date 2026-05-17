@@ -488,6 +488,22 @@ const translations: Record<string, Record<string, string>> = {
    "chat.deleteError": { th: "ลบข้อความไม่ได้:", en: "Could not delete message:", ja: "メッセージを削除できません:", zh: "无法删除消息:", ko: "메시지 삭제 불가:", ru: "Не удалось удалить сообщение:" },
    "directChat.blockSuccess": { th: "บล็อก {name} แล้ว", en: "Blocked {name}", ja: "{name}をブロックしました", zh: "已屏蔽{name}", ko: "{name}을(를) 차단했습니다", ru: "{name} заблокирован" },
    "groupChat.defaultTitle": { th: "กลุ่มกิจกรรม", en: "Activity Group", ja: "アクティビティグループ", zh: "活动群组", ko: "활동 그룹", ru: "Группа активностей" },
+   "groupChat.copyInviteLink": { th: "คัดลอกลิ้งเชิญ", en: "Copy Invite Link", ja: "招待リンクをコピー", zh: "复制邀请链接", ko: "초대 링크 복사", ru: "Скопировать ссылку" },
+   "groupChat.inviteLinkCopied": { th: "คัดลอกลิ้งแล้ว!", en: "Invite link copied!", ja: "招待リンクをコピーしました！", zh: "邀请链接已复制！", ko: "초대 링크가 복사되었습니다!", ru: "Ссылка скопирована!" },
+
+   // Join via invite link page
+   "joinGroup.title": { th: "เข้าร่วมกลุ่ม", en: "Join Group", ja: "グループに参加", zh: "加入群组", ko: "그룹 참여", ru: "Вступить в группу" },
+   "joinGroup.members": { th: "สมาชิก", en: "members", ja: "メンバー", zh: "成员", ko: "멤버", ru: "участников" },
+   "joinGroup.join": { th: "เข้าร่วมกลุ่ม", en: "Join Group", ja: "グループに参加", zh: "加入群组", ko: "그룹 참여", ru: "Вступить" },
+   "joinGroup.requestToJoin": { th: "ขอเข้าร่วมกลุ่ม", en: "Request to Join", ja: "参加申請", zh: "申请加入", ko: "참여 요청", ru: "Запросить вступление" },
+   "joinGroup.pendingRequest": { th: "รอการอนุมัติ", en: "Awaiting Approval", ja: "承認待ち", zh: "等待审批", ko: "승인 대기 중", ru: "Ожидание одобрения" },
+   "joinGroup.joinedSuccess": { th: "เข้าร่วมสำเร็จ! กำลังเปิดแชท...", en: "Joined! Opening chat...", ja: "参加しました！チャットを開いています...", zh: "已加入！正在打开聊天...", ko: "참여 완료! 채팅 열기...", ru: "Вы вступили! Открываем чат..." },
+   "joinGroup.requestedSuccess": { th: "ส่งคำขอแล้ว รอเจ้าของกลุ่มอนุมัติ", en: "Request sent! Awaiting owner approval.", ja: "申請しました！オーナーの承認をお待ちください。", zh: "申请已发送！等待群主审批。", ko: "요청을 보냈습니다! 그룹 주인의 승인을 기다리세요.", ru: "Запрос отправлен! Ждите одобрения." },
+   "joinGroup.kickedNote": { th: "คุณเคยถูกเตะออกจากกลุ่มนี้ ต้องให้เจ้าของกลุ่มอนุมัติก่อนจึงจะเข้าได้", en: "You were previously removed from this group. The owner must approve your request.", ja: "このグループから除外されたことがあります。オーナーの承認が必要です。", zh: "您曾被移出此群组，需要群主审批后才能加入。", ko: "이전에 그룹에서 제거된 적이 있습니다. 주인의 승인이 필요합니다.", ru: "Вы были исключены из группы. Для вступления нужно одобрение владельца." },
+   "joinGroup.notFound": { th: "ไม่พบกลุ่มนี้", en: "Group not found", ja: "グループが見つかりません", zh: "未找到该群组", ko: "그룹을 찾을 수 없습니다", ru: "Группа не найдена" },
+   "joinGroup.loginRequired": { th: "กรุณาเข้าสู่ระบบก่อน", en: "Please log in first", ja: "ログインしてください", zh: "请先登录", ko: "먼저 로그인하세요", ru: "Сначала войдите в систему" },
+   "joinGroup.loginToJoin": { th: "เข้าสู่ระบบเพื่อเข้าร่วม", en: "Log in to Join", ja: "参加するにはログイン", zh: "登录以加入", ko: "참여하려면 로그인", ru: "Войдите чтобы вступить" },
+   "joinGroup.alreadyMember": { th: "คุณเป็นสมาชิกแล้ว", en: "You're already a member", ja: "すでにメンバーです", zh: "您已是群成员", ko: "이미 멤버입니다", ru: "Вы уже участник" },
 
    // Auth page
    "auth.welcome": { th: "ยินดีต้อนรับ", en: "Welcome", ja: "ようこそ", zh: "欢迎", ko: "환영합니다", ru: "Добро пожаловать" },

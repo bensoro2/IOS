@@ -6,7 +6,7 @@ import { getIntlLocale } from "@/lib/dateLocale";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Loader2, MoreVertical, MapPin, Bell, BellOff, Users, LogOut, Check } from "lucide-react";
+import { ArrowLeft, Loader2, MoreVertical, MapPin, Bell, BellOff, Users, LogOut, Check, Link } from "lucide-react";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageBubble from "@/components/chat/MessageBubble";
 import ImageLightbox from "@/components/chat/ImageLightbox";
@@ -754,7 +754,16 @@ const GroupChat = () => {
               <Users className="w-4 h-4 mr-2 text-primary" />
               {t("groupChat.viewMembers")}
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem onClick={() => {
+              const link = `${window.location.origin}/join-group/${id}`;
+              navigator.clipboard.writeText(link).then(() => {
+                toast.success(t("groupChat.inviteLinkCopied"));
+              });
+            }}>
+              <Link className="w-4 h-4 mr-2 text-primary" />
+              {t("groupChat.copyInviteLink")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={handleLeaveChat}
               disabled={isLeaving}
               className="text-destructive focus:text-destructive"

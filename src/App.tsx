@@ -36,6 +36,7 @@ import ChangePassword from "./pages/ChangePassword";
 import AuthCallback from "./pages/AuthCallback";
 import TopRank from "./pages/TopRank";
 import HopeCoins from "./pages/HopeCoins";
+import JoinGroup from "./pages/JoinGroup";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +140,7 @@ const App = () => {
               <Route path="/change-password" element={<ChangePassword />} />
               <Route path="/top-rank" element={<TopRank />} />
               <Route path="/hope-coins" element={<HopeCoins />} />
+              <Route path="/join-group/:groupChatId" element={<JoinGroup />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
