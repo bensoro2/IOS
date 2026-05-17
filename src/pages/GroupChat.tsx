@@ -755,9 +755,8 @@ const GroupChat = () => {
               {t("groupChat.viewMembers")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
-              const origin = Capacitor.isNativePlatform() ? "https://levelon.lovable.app" : window.location.origin;
-              const link = `${origin}/join-group/${id}`;
-              navigator.clipboard.writeText(link).then(() => {
+              const code = (id || "").replace(/-/g, "").substring(0, 8).toUpperCase();
+              navigator.clipboard.writeText(code).then(() => {
                 toast.success(t("groupChat.inviteLinkCopied"));
               });
             }}>

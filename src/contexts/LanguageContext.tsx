@@ -191,6 +191,10 @@ const translations: Record<string, Record<string, string>> = {
   "messages.startConversation": { th: "ไปที่โปรไฟล์ผู้ใช้เพื่อเริ่มสนทนา", en: "Go to a user's profile to start a conversation", ja: "ユーザーのプロフィールから会話を始めましょう", zh: "前往用户资料页开始对话", ko: "사용자 프로필로 이동하여 대화를 시작하세요", ru: "Перейдите в профиль для начала" },
   "messages.noGroups": { th: "ยังไม่มีแชทกลุ่มกิจกรรม", en: "No activity group chats yet", ja: "グループチャットはまだありません", zh: "暂无活动群聊", ko: "활동 그룹 채팅이 아직 없습니다", ru: "Групповых чатов нет" },
   "messages.joinToChat": { th: "สร้างหรือเข้าร่วมกิจกรรมเพื่อเริ่มแชทกลุ่ม", en: "Create or join an activity to start group chat", ja: "アクティビティを作成または参加してグループチャットを始めましょう", zh: "创建或加入活动以开始群聊", ko: "활동을 만들거나 참여하여 그룹 채팅을 시작하세요", ru: "Создайте или присоединитесь к активности" },
+  "messages.enterInviteCode": { th: "ใส่รหัสเชิญ", en: "Enter Invite Code", ja: "招待コードを入力", zh: "输入邀请码", ko: "초대 코드 입력", ru: "Введите код" },
+  "messages.codeInputPlaceholder": { th: "รหัสเชิญ เช่น 40E1FECE", en: "Code e.g. 40E1FECE", ja: "コード例: 40E1FECE", zh: "邀请码，如 40E1FECE", ko: "코드 예: 40E1FECE", ru: "Код, например 40E1FECE" },
+  "messages.findGroup": { th: "เข้าร่วม", en: "Join", ja: "参加", zh: "加入", ko: "참여", ru: "Вступить" },
+  "messages.codeNotFound": { th: "ไม่พบกลุ่มจากรหัสนี้", en: "No group found with this code", ja: "このコードのグループが見つかりません", zh: "未找到该邀请码对应的群组", ko: "이 코드로 그룹을 찾을 수 없습니다", ru: "Группа с таким кодом не найдена" },
   "messages.sentImage": { th: "📷 ส่งรูปภาพ", en: "📷 Sent an image", ja: "📷 画像を送信", zh: "📷 发送了图片", ko: "📷 이미지 전송", ru: "📷 Отправлено изображение" },
   "messages.sentAudio": { th: "🎤 ส่งข้อความเสียง", en: "🎤 Sent a voice message", ja: "🎤 音声メッセージ", zh: "🎤 发送了语音", ko: "🎤 음성 메시지", ru: "🎤 Голосовое сообщение" },
   "messages.noMessages": { th: "ยังไม่มีข้อความ", en: "No messages yet", ja: "メッセージなし", zh: "暂无消息", ko: "메시지 없음", ru: "Сообщений нет" },
@@ -488,10 +492,10 @@ const translations: Record<string, Record<string, string>> = {
    "chat.deleteError": { th: "ลบข้อความไม่ได้:", en: "Could not delete message:", ja: "メッセージを削除できません:", zh: "无法删除消息:", ko: "메시지 삭제 불가:", ru: "Не удалось удалить сообщение:" },
    "directChat.blockSuccess": { th: "บล็อก {name} แล้ว", en: "Blocked {name}", ja: "{name}をブロックしました", zh: "已屏蔽{name}", ko: "{name}을(를) 차단했습니다", ru: "{name} заблокирован" },
    "groupChat.defaultTitle": { th: "กลุ่มกิจกรรม", en: "Activity Group", ja: "アクティビティグループ", zh: "活动群组", ko: "활동 그룹", ru: "Группа активностей" },
-   "groupChat.copyInviteLink": { th: "คัดลอกลิ้งเชิญ", en: "Copy Invite Link", ja: "招待リンクをコピー", zh: "复制邀请链接", ko: "초대 링크 복사", ru: "Скопировать ссылку" },
-   "groupChat.inviteLinkCopied": { th: "คัดลอกลิ้งแล้ว!", en: "Invite link copied!", ja: "招待リンクをコピーしました！", zh: "邀请链接已复制！", ko: "초대 링크가 복사되었습니다!", ru: "Ссылка скопирована!" },
+   "groupChat.copyInviteLink": { th: "คัดลอกรหัสเชิญ", en: "Copy Invite Code", ja: "招待コードをコピー", zh: "复制邀请码", ko: "초대 코드 복사", ru: "Скопировать код" },
+   "groupChat.inviteLinkCopied": { th: "คัดลอกรหัสแล้ว!", en: "Invite code copied!", ja: "招待コードをコピーしました！", zh: "邀请码已复制！", ko: "초대 코드가 복사되었습니다!", ru: "Код скопирован!" },
 
-   // Join via invite link page
+   // Join via invite code page
    "joinGroup.title": { th: "เข้าร่วมกลุ่ม", en: "Join Group", ja: "グループに参加", zh: "加入群组", ko: "그룹 참여", ru: "Вступить в группу" },
    "joinGroup.members": { th: "สมาชิก", en: "members", ja: "メンバー", zh: "成员", ko: "멤버", ru: "участников" },
    "joinGroup.join": { th: "เข้าร่วมกลุ่ม", en: "Join Group", ja: "グループに参加", zh: "加入群组", ko: "그룹 참여", ru: "Вступить" },

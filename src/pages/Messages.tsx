@@ -8,12 +8,16 @@ import {
   Users,
   Loader2,
   Plus,
+  Hash,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CreateActivityDialog } from "@/components/CreateActivityDialog";
 import { usePresence } from "@/hooks/usePresence";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface GroupChat {
   id: string;
@@ -57,6 +61,8 @@ const Messages = () => {
   const defaultTab = searchParams.get("tab") === "group" ? "group" : "private";
   const userIdRef = useRef<string | null>(null);
   const initialLoadDone = useRef(false);
+  const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
   const { t } = useLanguage();
   const onlineUsers = usePresence(currentUserId);
 
@@ -374,6 +380,13 @@ const Messages = () => {
           </TabsContent>
           
           <TabsContent value="group" className="mt-4">
+            <button
+              onClick={() => { setCodeInput(""); setShowCodeDialog(true); }}
+              className="w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+            >
+              <Hash className="w-4 h-4" />
+              {t("messages.enterInviteCode")}
+            </button>
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -427,6 +440,40 @@ const Messages = () => {
         </Tabs>
       </main>
       <BottomNav />
+
+      <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>{t("messages.enterInviteCode")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <Input
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+              placeholder={t("messages.codeInputPlaceholder")}
+              maxLength={8}
+              className="text-center text-lg font-mono tracking-widest"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && codeInput.length >= 6) {
+                  setShowCodeDialog(false);
+                  navigate(`/join-group/${codeInput}`);
+                }
+              }}
+            />
+            <Button
+              className="w-full"
+              disabled={codeInput.length < 6}
+              onClick={() => {
+                setShowCodeDialog(false);
+                navigate(`/join-group/${codeInput}`);
+              }}
+            >
+              {t("messages.findGroup")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

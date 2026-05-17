@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,7 +11,6 @@ type Status =
   | "loading"
   | "not_logged_in"
   | "not_found"
-  | "already_member"
   | "pending"
   | "kicked"
   | "idle"
@@ -27,64 +26,77 @@ interface GroupInfo {
 }
 
 const JoinGroup = () => {
-  const { groupChatId } = useParams<{ groupChatId: string }>();
+  const { groupChatId: codeOrId } = useParams<{ groupChatId: string }>();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [status, setStatus] = useState<Status>("loading");
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const resolvedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     init();
-  }, [groupChatId]);
+  }, [codeOrId]);
+
+  const resolveGroupId = async (raw: string): Promise<string | null> => {
+    const isShortCode = raw.length <= 12 && !raw.includes("-");
+    if (!isShortCode) return raw;
+
+    const { data } = await supabase
+      .from("activity_group_chats")
+      .select("id")
+      .ilike("id", `${raw.toLowerCase()}%`)
+      .limit(1)
+      .maybeSingle();
+
+    return data?.id ?? null;
+  };
 
   const init = async () => {
-    if (!groupChatId) { setStatus("not_found"); return; }
+    if (!codeOrId) { setStatus("not_found"); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setStatus("not_logged_in"); return; }
-    setCurrentUserId(user.id);
+
+    const gid = await resolveGroupId(codeOrId);
+    if (!gid) { setStatus("not_found"); return; }
+    resolvedIdRef.current = gid;
 
     const { data: chatData } = await supabase
       .from("activity_group_chats")
       .select("created_by, activities(title, image_url)")
-      .eq("id", groupChatId)
+      .eq("id", gid)
       .single();
 
     if (!chatData) { setStatus("not_found"); return; }
 
     const act = chatData.activities as { title: string; image_url: string | null } | null;
-
     const { count } = await supabase
       .from("group_chat_members")
       .select("*", { count: "exact", head: true })
-      .eq("group_chat_id", groupChatId);
+      .eq("group_chat_id", gid);
 
     setGroupInfo({ title: act?.title || "", image_url: act?.image_url || null, member_count: count || 0 });
 
-    // Check already a member
     const { data: memberRow } = await supabase
       .from("group_chat_members")
       .select("id")
-      .eq("group_chat_id", groupChatId)
+      .eq("group_chat_id", gid)
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (memberRow) { navigate(`/group-chat/${groupChatId}`, { replace: true }); return; }
+    if (memberRow) { navigate(`/group-chat/${gid}`, { replace: true }); return; }
 
-    // Check kicked
     const { data: kickedRow } = await supabase
       .from("kicked_members")
       .select("id")
-      .eq("group_chat_id", groupChatId)
+      .eq("group_chat_id", gid)
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Check pending request
     const { data: requestRow } = await supabase
       .from("join_requests")
       .select("id")
-      .eq("group_chat_id", groupChatId)
+      .eq("group_chat_id", gid)
       .eq("user_id", user.id)
       .eq("status", "pending")
       .maybeSingle();
@@ -95,15 +107,17 @@ const JoinGroup = () => {
   };
 
   const handleJoin = async () => {
-    if (!currentUserId || !groupChatId) return;
+    const gid = resolvedIdRef.current;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!gid || !user) return;
     setStatus("joining");
     try {
       const { error } = await supabase
         .from("group_chat_members")
-        .insert({ group_chat_id: groupChatId, user_id: currentUserId });
+        .insert({ group_chat_id: gid, user_id: user.id });
       if (error) throw error;
       setStatus("joined");
-      setTimeout(() => navigate(`/group-chat/${groupChatId}`), 1200);
+      setTimeout(() => navigate(`/group-chat/${gid}`), 1200);
     } catch {
       toast.error("เกิดข้อผิดพลาด");
       setStatus("idle");
@@ -111,17 +125,19 @@ const JoinGroup = () => {
   };
 
   const handleRequestToJoin = async () => {
-    if (!currentUserId || !groupChatId) return;
+    const gid = resolvedIdRef.current;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!gid || !user) return;
     setStatus("requesting");
     try {
       const { error } = await supabase
         .from("join_requests")
-        .insert({ group_chat_id: groupChatId, user_id: currentUserId, status: "pending" });
+        .insert({ group_chat_id: gid, user_id: user.id, status: "pending" });
       if (error && error.code !== "23505") throw error;
       setStatus("requested");
     } catch {
       toast.error("เกิดข้อผิดพลาด");
-      setStatus(status === "kicked" ? "kicked" : "idle");
+      setStatus("kicked");
     }
   };
 
@@ -137,7 +153,7 @@ const JoinGroup = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-muted-foreground text-lg">{t("joinGroup.notFound")}</p>
-        <Button variant="outline" onClick={() => navigate("/")}><ArrowLeft className="w-4 h-4 mr-2" />กลับหน้าหลัก</Button>
+        <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-2" />กลับ</Button>
       </div>
     );
   }
@@ -145,17 +161,6 @@ const JoinGroup = () => {
   if (status === "not_logged_in") {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-6 text-center">
-        {groupInfo && (
-          <div className="flex flex-col items-center gap-3">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={groupInfo.image_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                {groupInfo.title?.charAt(0) || "G"}
-              </AvatarFallback>
-            </Avatar>
-            <h1 className="text-xl font-bold">{groupInfo.title}</h1>
-          </div>
-        )}
         <p className="text-muted-foreground">{t("joinGroup.loginRequired")}</p>
         <Button className="w-full max-w-xs" onClick={() => navigate("/auth")}>
           {t("joinGroup.loginToJoin")}
@@ -163,8 +168,6 @@ const JoinGroup = () => {
       </div>
     );
   }
-
-  const isKicked = status === "kicked" || (status === "requesting" && groupInfo !== null);
 
   return (
     <div className="min-h-screen bg-background flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
@@ -184,7 +187,6 @@ const JoinGroup = () => {
                 {groupInfo.title?.charAt(0) || "G"}
               </AvatarFallback>
             </Avatar>
-
             <div>
               <h1 className="text-2xl font-bold mb-1">{groupInfo.title}</h1>
               <div className="flex items-center justify-center gap-1 text-muted-foreground text-sm">
@@ -195,7 +197,7 @@ const JoinGroup = () => {
           </>
         )}
 
-        {(status === "kicked") && (
+        {status === "kicked" && (
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 text-sm text-amber-800 dark:text-amber-300 max-w-xs">
             {t("joinGroup.kickedNote")}
           </div>
@@ -205,9 +207,9 @@ const JoinGroup = () => {
           <p className="text-green-600 font-medium">{t("joinGroup.joinedSuccess")}</p>
         )}
         {(status === "requested" || status === "pending") && (
-          <p className="text-muted-foreground">{
-            status === "requested" ? t("joinGroup.requestedSuccess") : t("joinGroup.pendingRequest")
-          }</p>
+          <p className="text-muted-foreground">
+            {status === "requested" ? t("joinGroup.requestedSuccess") : t("joinGroup.pendingRequest")}
+          </p>
         )}
 
         <div className="w-full max-w-xs space-y-3">
