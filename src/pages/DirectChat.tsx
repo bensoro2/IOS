@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, Flag, Bell, BellOff } from "lucide-react";
 import { MoreVertical, Ban, UserX } from "lucide-react";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageBubble from "@/components/chat/MessageBubble";
+import ImageLightbox from "@/components/chat/ImageLightbox";
 import { BUCKET_CHAT_MEDIA, CHAT_POLL_INTERVAL_MS, CHAT_POLL_MAX_MS, SCROLL_TO_BOTTOM_DELAY_MS } from "@/config/defaults";
  import {
    DropdownMenu,
@@ -710,6 +711,20 @@ const DirectChat = () => {
     });
   };
 
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const chatImages = useMemo(
+    () => messages
+      .filter(m => m.media_type === "image" && m.media_url && !m.is_deleted)
+      .map(m => m.media_url!),
+    [messages]
+  );
+
+  const openLightbox = (url: string) => {
+    const idx = chatImages.indexOf(url);
+    if (idx !== -1) setLightboxIndex(idx);
+  };
+
   // แสดง "อ่านแล้ว" ใต้ message ล่าสุดที่ถูกอ่าน
   // ถ้าส่ง message ใหม่ (ยังไม่อ่าน) → ยังแสดงใต้ message เก่าที่อ่านแล้ว ไม่หาย
   const lastReadMsgId = useMemo(() => {
@@ -832,6 +847,7 @@ const DirectChat = () => {
                 onReply={handleReply}
                 onDelete={handleDelete}
                 onReact={handleReact}
+                onImageOpen={openLightbox}
                 showReadReceipt={message.id === lastReadMsgId}
                 otherUserAvatar={otherUser?.avatar_url}
                 otherUserName={otherUser?.display_name}
@@ -923,6 +939,14 @@ const DirectChat = () => {
            reportedUserName={otherUser.display_name || t("common.user")}
            open={showReportSheet}
            onOpenChange={setShowReportSheet}
+         />
+       )}
+
+       {lightboxIndex !== null && (
+         <ImageLightbox
+           images={chatImages}
+           initialIndex={lightboxIndex}
+           onClose={() => setLightboxIndex(null)}
          />
        )}
     </div>

@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Play, Pause, Reply, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -32,6 +31,7 @@ interface MessageBubbleProps {
   onReply?: (message: Message) => void;
   onDelete?: (messageId: string) => void;
   onReact?: (messageId: string, emoji: string) => void;
+  onImageOpen?: (url: string) => void;
   showReadReceipt?: boolean;
   otherUserAvatar?: string | null;
   otherUserName?: string | null;
@@ -221,20 +221,10 @@ const renderTextWithLinks = (text: string) => {
   });
 };
 
-const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onDelete, onReact, showReadReceipt, otherUserAvatar, otherUserName, swipeOffset = 0 }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onDelete, onReact, onImageOpen, showReadReceipt, otherUserAvatar, otherUserName, swipeOffset = 0 }: MessageBubbleProps) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [showMenu, setShowMenu] = useState(false);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-
-  // Lock body scroll while lightbox is open so underlying chat cannot scroll
-  useEffect(() => {
-    if (!lightboxUrl) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [lightboxUrl]);
-
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const reelIdInContent = message.content ? (message.content.match(REEL_URL_REGEX)?.[1] ?? null) : null;
 
@@ -289,7 +279,7 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
                     alt="Shared image"
                     className="max-w-full rounded-lg mb-1 cursor-pointer active:opacity-80"
                     style={{ maxHeight: "200px" }}
-                    onClick={(e) => { e.stopPropagation(); setLightboxUrl(message.media_url!); }}
+                    onClick={(e) => { e.stopPropagation(); onImageOpen?.(message.media_url!); }}
                   />
                 )}
                 {message.media_type === "audio" && message.media_url && <AudioPlayer src={message.media_url} />}
@@ -345,63 +335,6 @@ const MessageBubble = ({ message, isOwn, formatTime, currentUserId, onReply, onD
           )}
         </div>
       </div>
-
-      {/* Lightbox — portalled to document.body so CSS transform on parent chat
-          container does not break position:fixed stacking context on iOS */}
-      {lightboxUrl && createPortal(
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'black',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            touchAction: 'none',
-          }}
-          onClick={() => setLightboxUrl(null)}
-        >
-          <img
-            src={lightboxUrl}
-            alt="Full size"
-            style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain',
-              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)',
-              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-              paddingLeft: '16px',
-              paddingRight: '16px',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
-          {/* Close button — fixed relative to viewport via portal */}
-          <button
-            style={{
-              position: 'absolute',
-              top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
-              right: '16px',
-              zIndex: 10,
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              fontSize: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-            onClick={() => setLightboxUrl(null)}
-          >
-            ✕
-          </button>
-        </div>,
-        document.body
-      )}
 
       {/* Action Menu (bottom sheet) */}
       {showMenu && (

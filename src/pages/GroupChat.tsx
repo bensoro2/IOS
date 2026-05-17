@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Keyboard } from "@capacitor/keyboard";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Loader2, MoreVertical, MapPin, Bell, BellOff, Users, LogOut, Check } from "lucide-react";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageBubble from "@/components/chat/MessageBubble";
+import ImageLightbox from "@/components/chat/ImageLightbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,6 +61,20 @@ const GroupChat = () => {
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [isLeaving, setIsLeaving] = useState(false);
   const { muted: isGroupMuted, toggle: toggleGroupMute } = useGroupNotificationMute(id || "");
+
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const chatImages = useMemo(
+    () => messages
+      .filter(m => m.media_type === "image" && m.media_url && !m.is_deleted)
+      .map(m => m.media_url!),
+    [messages]
+  );
+
+  const openLightbox = (url: string) => {
+    const idx = chatImages.indexOf(url);
+    if (idx !== -1) setLightboxIndex(idx);
+  };
 
   // Swipe: ซ้าย (ขวา→ซ้าย) = แสดงเวลา, ขวา (ซ้าย→ขวา) = กลับหน้ารายชื่อ
   const [swipeX, setSwipeX] = useState(0);
@@ -788,6 +803,7 @@ const GroupChat = () => {
                 onDelete={handleDeleteMessage}
                 onReply={(msg) => setReplyTo(msg)}
                 onReact={handleReactMessage}
+                onImageOpen={openLightbox}
                 swipeOffset={swipeX}
               />
             ))
@@ -812,6 +828,14 @@ const GroupChat = () => {
         currentUserId={currentUserId}
         onMemberKicked={() => setMemberCount((prev) => Math.max(0, prev - 1))}
       />
+
+      {lightboxIndex !== null && (
+        <ImageLightbox
+          images={chatImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 };
