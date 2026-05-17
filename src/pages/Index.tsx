@@ -368,6 +368,18 @@ const Index = () => {
     fetchActivities(selectedProvince, selectedCategory);
   }, [selectedProvince, selectedCategory]);
 
+  // Realtime badge — อัปเดตเลขแจ้งเตือน join request แบบ real-time
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel("join-requests-badge")
+      .on("postgres_changes", { event: "*", schema: "public", table: "join_requests" }, () => {
+        fetchIncomingRequests(user.id);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");

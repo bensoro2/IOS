@@ -7,13 +7,11 @@ import {
   MessageSquare,
   Users,
   Loader2,
-  Plus,
   Hash,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { CreateActivityDialog } from "@/components/CreateActivityDialog";
 import { usePresence } from "@/hooks/usePresence";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -60,7 +58,6 @@ const Messages = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "group" ? "group" : "private";
   const userIdRef = useRef<string | null>(null);
-  const initialLoadDone = useRef(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const { t } = useLanguage();
@@ -452,7 +449,7 @@ const Messages = () => {
               onChange={(e) => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
               placeholder={t("messages.codeInputPlaceholder")}
               maxLength={8}
-              className="text-center text-lg font-mono tracking-widest"
+              className="text-center text-lg font-mono tracking-normal"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter" && codeInput.length >= 6) {
