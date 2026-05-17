@@ -137,7 +137,17 @@ const JoinGroup = () => {
       const { error } = await supabase
         .from("join_requests")
         .insert({ group_chat_id: gid, user_id: user.id, status: "pending" });
-      if (error && error.code !== "23505") throw error;
+      if (error && error.code === "23505") {
+        // Row already exists (previously rejected) — reset it back to pending
+        const { error: updateError } = await supabase
+          .from("join_requests")
+          .update({ status: "pending" })
+          .eq("group_chat_id", gid)
+          .eq("user_id", user.id);
+        if (updateError) throw updateError;
+      } else if (error) {
+        throw error;
+      }
       setStatus("requested");
     } catch {
       toast.error("เกิดข้อผิดพลาด");
