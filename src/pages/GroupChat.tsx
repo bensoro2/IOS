@@ -755,7 +755,8 @@ const GroupChat = () => {
               {t("groupChat.viewMembers")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
-              const link = `${window.location.origin}/join-group/${id}`;
+              const origin = Capacitor.isNativePlatform() ? "https://levelon.lovable.app" : window.location.origin;
+              const link = `${origin}/join-group/${id}`;
               navigator.clipboard.writeText(link).then(() => {
                 toast.success(t("groupChat.inviteLinkCopied"));
               });
