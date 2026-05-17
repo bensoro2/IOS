@@ -41,14 +41,15 @@ const JoinGroup = () => {
     const isShortCode = raw.length <= 12 && !raw.includes("-");
     if (!isShortCode) return raw;
 
-    const { data } = await supabase
+    // UUID is stored as UUID type in Postgres — must cast to text for prefix search
+    const { data, error } = await supabase
       .from("activity_group_chats")
       .select("id")
-      .ilike("id", `${raw.toLowerCase()}%`)
-      .limit(1)
-      .maybeSingle();
+      .filter("id::text", "ilike", `${raw.toLowerCase()}%`)
+      .limit(1);
 
-    return data?.id ?? null;
+    if (error || !data || data.length === 0) return null;
+    return (data[0] as { id: string }).id;
   };
 
   const init = async () => {
