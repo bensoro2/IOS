@@ -61,6 +61,7 @@ const GroupChat = () => {
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [isLeaving, setIsLeaving] = useState(false);
   const { muted: isGroupMuted, toggle: toggleGroupMute } = useGroupNotificationMute(id || "");
+  const userCacheRef = useRef<Map<string, { display_name: string | null; avatar_url: string | null }>>(new Map());
 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -249,16 +250,16 @@ const GroupChat = () => {
                 d => d.user_id === m.user_id && d.content === m.content
               ));
 
-              const enriched: Message[] = data.map(msg => ({
-                id: msg.id,
-                content: msg.content,
-                user_id: msg.user_id,
-                created_at: msg.created_at,
-                user_display_name: prev.find(p => p.id === msg.id)?.user_display_name || t("common.unknownUser"),
-                user_avatar: prev.find(p => p.id === msg.id)?.user_avatar,
-                media_url: msg.media_url,
-                media_type: msg.media_type,
-              }));
+              const enriched: Message[] = data.map(msg => {
+                const existing = prev.find(p => p.id === msg.id);
+                const cached = userCacheRef.current.get(msg.user_id);
+                return {
+                  ...msg,
+                  user_display_name: existing?.user_display_name || cached?.display_name || t("common.unknownUser"),
+                  user_avatar: existing?.user_avatar ?? cached?.avatar_url ?? undefined,
+                  reactions: existing?.reactions ?? msg.reactions,
+                };
+              });
 
               return [...enriched, ...remainingTemp].sort(
                 (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -306,6 +307,7 @@ const GroupChat = () => {
             .eq("id", newMsg.user_id)
             .maybeSingle()
             .then(({ data: userData }) => {
+              if (userData) userCacheRef.current.set(newMsg.user_id, userData);
               const enrichedMessage: Message = {
                 ...newMsg,
                 user_display_name: userData?.display_name || t("common.unknownUser"),
@@ -531,6 +533,7 @@ const GroupChat = () => {
             .eq("id", msg.user_id)
             .maybeSingle();
 
+          if (userData) userCacheRef.current.set(msg.user_id, userData);
           return {
             ...msg,
             user_display_name: userData?.display_name || t("common.unknownUser"),

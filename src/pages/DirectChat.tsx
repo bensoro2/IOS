@@ -75,6 +75,7 @@ const DirectChat = () => {
   const isOtherUserOnline = otherUser ? onlineUsers.has(otherUser.id) : false;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const userCacheRef = useRef<Map<string, { display_name: string | null; avatar_url: string | null }>>(new Map());
 
   // Swipe gestures: right = reveal timestamps, left = go back to messages list
   const [swipeX, setSwipeX] = useState(0);
@@ -269,21 +270,25 @@ const DirectChat = () => {
                 d => d.sender_id === m.user_id && d.content === m.content
               ));
 
-              const enriched: Message[] = data.map(msg => ({
-                id: msg.id,
-                content: msg.content,
-                user_id: msg.sender_id,
-                created_at: msg.created_at,
-                user_display_name: prevMap.get(msg.id)?.user_display_name || t("common.unknownUser"),
-                user_avatar: prevMap.get(msg.id)?.user_avatar,
-                media_url: msg.media_url,
-                media_type: msg.media_type,
-                reply_to_id: msg.reply_to_id ?? null,
-                reply_preview: msg.reply_preview ?? null,
-                reactions: (msg.reactions as Record<string, string[]>) ?? null,
-                is_deleted: msg.is_deleted ?? false,
-                read_at: msg.read_at ?? null,
-              }));
+              const enriched: Message[] = data.map(msg => {
+                const existing = prevMap.get(msg.id);
+                const cached = userCacheRef.current.get(msg.sender_id);
+                return {
+                  id: msg.id,
+                  content: msg.content,
+                  user_id: msg.sender_id,
+                  created_at: msg.created_at,
+                  user_display_name: existing?.user_display_name || cached?.display_name || t("common.unknownUser"),
+                  user_avatar: existing?.user_avatar ?? cached?.avatar_url ?? undefined,
+                  media_url: msg.media_url,
+                  media_type: msg.media_type,
+                  reply_to_id: msg.reply_to_id ?? null,
+                  reply_preview: msg.reply_preview ?? null,
+                  reactions: (msg.reactions as Record<string, string[]>) ?? null,
+                  is_deleted: msg.is_deleted ?? false,
+                  read_at: msg.read_at ?? null,
+                };
+              });
 
               return [...enriched, ...remainingTemp].sort(
                 (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -386,6 +391,7 @@ const DirectChat = () => {
         .eq("id", newMsg.sender_id)
         .maybeSingle()
         .then(({ data: userData }) => {
+          if (userData) userCacheRef.current.set(newMsg.sender_id, userData);
           const enrichedMessage: Message = {
             id: newMsg.id,
             content: newMsg.content,
@@ -466,6 +472,7 @@ const DirectChat = () => {
       const userMap = new Map(
         (usersData || []).map(u => [u.id, u])
       );
+      (usersData || []).forEach(u => userCacheRef.current.set(u.id, u));
 
       const enrichedMessages: Message[] = (data || []).map(msg => {
         const userData = userMap.get(msg.sender_id);
