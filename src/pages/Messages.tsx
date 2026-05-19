@@ -16,6 +16,7 @@ import { usePresence } from "@/hooks/usePresence";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import PullToRefresh from "@/components/PullToRefresh";
 
 interface GroupChat {
   id: string;
@@ -300,7 +301,16 @@ const Messages = () => {
         <h1 className="text-xl font-bold">{t("messages.title")}</h1>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20">
+      <PullToRefresh
+        onRefresh={async () => {
+          if (!currentUserId) return;
+          await Promise.all([
+            fetchGroupChats(currentUserId),
+            fetchDirectConversations(currentUserId),
+          ]);
+        }}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20"
+      >
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-transparent border border-border rounded-full p-1 h-auto">
             <TabsTrigger 
@@ -435,7 +445,7 @@ const Messages = () => {
             )}
           </TabsContent>
         </Tabs>
-      </main>
+      </PullToRefresh>
       <BottomNav />
 
       <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>

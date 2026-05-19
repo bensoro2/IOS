@@ -8,6 +8,7 @@ import { CreateActivityDialog } from "@/components/CreateActivityDialog";
 import { ActivityCard } from "@/components/ActivityCard";
 import { ActivitySearchSelector } from "@/components/ActivitySearchSelector";
 import JoinRequestsDialog from "@/components/JoinRequestsDialog";
+import PullToRefresh from "@/components/PullToRefresh";
 import { toast } from "sonner";
 import {
   Bell,
@@ -437,7 +438,19 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <PullToRefresh
+        onRefresh={async () => {
+          if (!user?.id) return;
+          await Promise.all([
+            fetchActivities(selectedProvince, selectedCategory),
+            fetchIncomingRequests(user.id),
+            fetchJoinedGroups(user.id),
+            fetchKickedAndPendingStatus(user.id),
+          ]);
+        }}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         {/* Search Bar */}
         <ActivitySearchSelector
           value={selectedCategory}
@@ -508,9 +521,8 @@ const Index = () => {
             </div>
           )}
         </div>
-      </main>
+      </PullToRefresh>
 
- 
        {/* Join Requests Dialog */}
        <JoinRequestsDialog
          open={showJoinRequestsDialog}

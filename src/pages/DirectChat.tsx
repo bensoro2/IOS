@@ -79,27 +79,55 @@ const DirectChat = () => {
   // Swipe gestures: right = reveal timestamps, left = go back to messages list
   const [swipeX, setSwipeX] = useState(0);
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const [pullYPx, setPullYPx] = useState(0);
+  const pullStartYRef = useRef(0);
+  const isPullingDownRef = useRef(false);
+  const PULL_THRESHOLD = 70;
 
   const handleSwipeStart = (e: React.TouchEvent) => {
     swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    const container = messagesContainerRef.current;
+    if (container && container.scrollTop <= 5 && !isPullRefreshing) {
+      pullStartYRef.current = e.touches[0].clientY;
+      isPullingDownRef.current = true;
+    }
   };
 
   const handleSwipeMove = (e: React.TouchEvent) => {
     if (!swipeRef.current) return;
     const dx = e.touches[0].clientX - swipeRef.current.x;
     const dy = Math.abs(e.touches[0].clientY - swipeRef.current.y);
-    if (dy > Math.abs(dx) * 0.8) return;
+    if (dy > Math.abs(dx) * 0.8) {
+      if (isPullingDownRef.current && !isPullRefreshing) {
+        const pullDy = e.touches[0].clientY - pullStartYRef.current;
+        if (pullDy > 0) setPullYPx(Math.min(pullDy * 0.5, PULL_THRESHOLD * 1.5));
+        else { isPullingDownRef.current = false; setPullYPx(0); }
+      }
+      return;
+    }
     // ปัดซ้าย (dx < 0) → แสดง timestamp
     if (dx < 0) setSwipeX(Math.min(-dx, 80));
     else setSwipeX(0);
   };
 
-  const handleSwipeEnd = (e: React.TouchEvent) => {
+  const handleSwipeEnd = async (e: React.TouchEvent) => {
     if (!swipeRef.current) return;
     const dx = e.changedTouches[0].clientX - swipeRef.current.x;
     const dy = Math.abs(e.changedTouches[0].clientY - swipeRef.current.y);
     swipeRef.current = null;
     setSwipeX(0);
+    if (isPullingDownRef.current) {
+      isPullingDownRef.current = false;
+      const captured = pullYPx;
+      setPullYPx(0);
+      if (captured >= PULL_THRESHOLD && currentUserId && odirectId) {
+        setIsPullRefreshing(true);
+        try { await fetchMessages(currentUserId, odirectId); }
+        finally { setIsPullRefreshing(false); }
+        return;
+      }
+    }
     // ปัดขวา (dx > 0) → กลับไปหน้ารายชื่อแชท
     if (dx > 80 && dy < 100) {
       navigate("/messages?tab=private");
@@ -822,6 +850,19 @@ const DirectChat = () => {
         onTouchMove={handleSwipeMove}
         onTouchEnd={handleSwipeEnd}
       >
+        {/* Pull-to-refresh indicator */}
+        <div
+          className="flex items-center justify-center overflow-hidden"
+          style={{
+            height: isPullRefreshing ? 48 : Math.min(pullYPx * (48 / PULL_THRESHOLD), 48),
+            opacity: isPullRefreshing ? 1 : Math.min(pullYPx / PULL_THRESHOLD, 1),
+            transition: pullYPx === 0 ? "height 0.3s ease, opacity 0.3s ease" : "none",
+          }}
+        >
+          {(pullYPx > 8 || isPullRefreshing) && (
+            <Loader2 className={`w-5 h-5 text-muted-foreground${(isPullRefreshing || pullYPx >= PULL_THRESHOLD) ? " animate-spin" : ""}`} />
+          )}
+        </div>
         <div
           className="px-4 py-4 space-y-4"
           style={{

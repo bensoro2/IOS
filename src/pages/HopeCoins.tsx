@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import PullToRefresh from "@/components/PullToRefresh";
 
 const LS_PENDING_COIN = "coin_pending_session";
 
@@ -142,7 +143,7 @@ const HopeCoins = () => {
       </div>
 
       {/* Packages grid */}
-      <main className="flex-1 overflow-y-auto pb-20 px-4">
+      <PullToRefresh onRefresh={fetchBalance} className="flex-1 overflow-y-auto pb-20 px-4">
         <h2 className="text-sm font-semibold text-muted-foreground mb-3">เลือกแพ็คเกจ</h2>
         <div className="grid grid-cols-3 gap-3">
           {COIN_PACKAGES.map((pkg) => (
@@ -165,7 +166,7 @@ const HopeCoins = () => {
             </button>
           ))}
         </div>
-      </main>
+      </PullToRefresh>
 
       {/* Purchase Dialog */}
       <Dialog open={!!selectedPkg} onOpenChange={(open) => !open && setSelectedPkg(null)}>

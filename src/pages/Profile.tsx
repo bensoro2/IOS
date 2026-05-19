@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { calculateLevelAndExp } from "@/utils/levelSystem";
+import PullToRefresh from "@/components/PullToRefresh";
 
 interface ActivityJoined {
   category: string;
@@ -446,7 +447,19 @@ const Profile = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 min-h-0 px-4 py-4 space-y-4 overflow-y-auto pb-20">
+      <PullToRefresh
+        onRefresh={async () => {
+          if (!user?.id) return;
+          await Promise.all([
+            fetchFollowCounts(user.id),
+            fetchUserActivities(user.id),
+            fetchUserShops(user.id),
+            fetchUserReels(user.id),
+            fetchLikedReels(user.id),
+          ]);
+        }}
+        className="flex-1 min-h-0 px-4 py-4 space-y-4 overflow-y-auto pb-20"
+      >
         {/* Profile Card */}
         <div className="bg-card rounded-2xl p-5">
           <div className="flex items-center gap-4">
@@ -876,7 +889,7 @@ const Profile = () => {
           </Tabs>
         </div>
 
-      </main>
+      </PullToRefresh>
 
       {/* Edit Shop Dialog */}
       {editingShop && (

@@ -34,6 +34,11 @@ const Reels = () => {
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const [pullYPx, setPullYPx] = useState(0);
+  const reelPullStartYRef = useRef(0);
+  const isReelPullingRef = useRef(false);
+  const REEL_PULL_THRESHOLD = 70;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const startReelId = searchParams.get("startId");
@@ -378,12 +383,48 @@ const Reels = () => {
         <ReelsSearchBar />
       </header>
 
+      {/* Pull-to-refresh floating indicator for Reels */}
+      {(pullYPx > 8 || isPullRefreshing) && (
+        <div
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-background/80 backdrop-blur-sm rounded-full p-2.5 shadow-lg"
+          style={{
+            opacity: isPullRefreshing ? 1 : Math.min(pullYPx / REEL_PULL_THRESHOLD, 1),
+            transition: pullYPx === 0 ? "opacity 0.3s ease" : "none",
+          }}
+        >
+          <Loader2 className={`w-5 h-5 text-foreground${(isPullRefreshing || pullYPx >= REEL_PULL_THRESHOLD) ? " animate-spin" : ""}`} />
+        </div>
+      )}
+
       {/* Reels Container */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
         className="fixed inset-0 overflow-y-scroll snap-y snap-mandatory scrollbar-hide overscroll-contain"
         style={{ scrollSnapType: 'y mandatory', WebkitOverflowScrolling: 'touch' }}
+        onTouchStart={(e) => {
+          const el = containerRef.current;
+          if (!el || el.scrollTop > 5 || isPullRefreshing) return;
+          reelPullStartYRef.current = e.touches[0].clientY;
+          isReelPullingRef.current = true;
+        }}
+        onTouchMove={(e) => {
+          if (!isReelPullingRef.current || isPullRefreshing) return;
+          const dy = e.touches[0].clientY - reelPullStartYRef.current;
+          if (dy <= 0) { isReelPullingRef.current = false; setPullYPx(0); return; }
+          setPullYPx(Math.min(dy * 0.5, REEL_PULL_THRESHOLD * 1.5));
+        }}
+        onTouchEnd={async () => {
+          if (!isReelPullingRef.current) return;
+          isReelPullingRef.current = false;
+          const captured = pullYPx;
+          setPullYPx(0);
+          if (captured >= REEL_PULL_THRESHOLD) {
+            setIsPullRefreshing(true);
+            try { await fetchReels(user?.id, filterUserId); }
+            finally { setIsPullRefreshing(false); }
+          }
+        }}
       >
         {reels.map((reel, index) => (
           <ReelCard

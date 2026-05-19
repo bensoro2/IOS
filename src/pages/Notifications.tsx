@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import PullToRefresh from "@/components/PullToRefresh";
 import { Loader2, Heart, MessageCircle, UserPlus, Film, X, Trash2, ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -176,7 +176,12 @@ const Notifications = () => {
         )}
       </header>
 
-      <ScrollArea className="flex-1">
+      <PullToRefresh
+        onRefresh={async () => {
+          if (currentUserId) await fetchNotifications(currentUserId);
+        }}
+        className="flex-1 overflow-y-auto"
+      >
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -231,7 +236,7 @@ const Notifications = () => {
             ))}
           </div>
         )}
-      </ScrollArea>
+      </PullToRefresh>
     </div>
   );
 };

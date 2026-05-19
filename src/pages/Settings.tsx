@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { useNotificationPreference } from "@/hooks/useNotificationPreference";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { PlanType } from "@/hooks/usePremiumStatus";
+import PullToRefresh from "@/components/PullToRefresh";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -376,7 +377,19 @@ const Settings = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-4 space-y-4 overflow-y-auto pb-8">
+      <PullToRefresh
+        onRefresh={async () => {
+          if (!user) return;
+          const [{ count }, { data: userData }] = await Promise.all([
+            supabase.from("blocks").select("*", { count: "exact", head: true }).eq("blocker_id", user.id),
+            (supabase as any).from("users").select("user_code, check_plus_points").eq("id", user.id).maybeSingle(),
+          ]);
+          setBlockedUsers(count || 0);
+          setUserCode((userData as any)?.user_code || null);
+          setCheckPlusPoints((userData as any)?.check_plus_points ?? 0);
+        }}
+        className="flex-1 px-4 py-4 space-y-4 overflow-y-auto pb-8"
+      >
         {/* User Info */}
         <div className="flex items-center gap-4 py-2">
           <Avatar className="w-14 h-14 border-2 border-primary">
@@ -644,7 +657,7 @@ const Settings = () => {
              </AlertDialogFooter>
            </AlertDialogContent>
          </AlertDialog>
-      </main>
+      </PullToRefresh>
     </div>
   );
 };

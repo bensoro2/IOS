@@ -9,6 +9,7 @@ import { calculateLevelAndExp } from "@/utils/levelSystem";
 // import { FundingBar } from "@/components/FundingBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import PullToRefresh from "@/components/PullToRefresh";
 
 interface RankedUser {
   user_id: string;
@@ -193,7 +194,7 @@ const TopRank = () => {
 
       {/* <FundingBar /> */}
 
-      <main className="flex-1 overflow-y-auto pb-20 min-h-0">
+      <PullToRefresh onRefresh={fetchRankings} className="flex-1 overflow-y-auto pb-20 min-h-0">
         {loading ? (
           <div className="p-4 space-y-4">
             {[...Array(3)].map((_, i) => (
@@ -263,7 +264,7 @@ const TopRank = () => {
             )}
           </div>
         )}
-      </main>
+      </PullToRefresh>
     </div>
   );
 };

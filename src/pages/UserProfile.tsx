@@ -53,6 +53,7 @@ import { createNotification, deleteFollowNotification } from "@/hooks/useNotific
   } from "@/components/ui/alert-dialog";
 import { ReportUserSheet } from "@/components/ReportUserSheet";
 import { calculateLevelAndExp } from "@/utils/levelSystem";
+import PullToRefresh from "@/components/PullToRefresh";
 
 interface ActivityJoined {
   category: string;
@@ -624,7 +625,17 @@ const UserProfile = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+      <PullToRefresh
+        onRefresh={async () => {
+          if (!userId) return;
+          await Promise.all([
+            fetchUserData(),
+            fetchUserShops(userId),
+            fetchUserReels(userId),
+          ]);
+        }}
+        className="flex-1 px-4 py-4 space-y-4 overflow-y-auto"
+      >
         {/* Profile Card */}
         <div className="bg-card rounded-2xl p-5">
           <div className="flex flex-col items-center text-center">
@@ -941,7 +952,7 @@ const UserProfile = () => {
             </Tabs>
           </div>
          )}
-      </main>
+      </PullToRefresh>
        
        {/* Block Confirmation Dialog */}
        <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>

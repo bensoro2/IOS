@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryProvinces";
+import PullToRefresh from "@/components/PullToRefresh";
  
  const Shop = () => {
    const [user, setUser] = useState<any>(null);
@@ -114,7 +115,10 @@ import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryP
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 px-4 py-4 space-y-4">
+      <PullToRefresh
+        onRefresh={() => fetchShops(selectedProvince, selectedCategory)}
+        className="flex-1 px-4 py-4 space-y-4 overflow-y-auto"
+      >
         {/* Category Filter */}
         <div>
           <p className="text-sm text-muted-foreground mb-1">{t("shop.category")}</p>
@@ -167,7 +171,7 @@ import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryP
              </div>
            )}
          </div>
-       </main>
+       </PullToRefresh>
  
      </div>
    );
