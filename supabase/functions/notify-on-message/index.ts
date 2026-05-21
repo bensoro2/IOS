@@ -185,26 +185,39 @@ Deno.serve(async (req) => {
     if (table === "direct_messages") {
       const { sender_id, receiver_id, content, media_type } = record;
 
-      const { data: sender } = await adminClient.from("users").select("display_name").eq("id", sender_id).maybeSingle();
-      const senderName = sender?.display_name ?? "ผู้ใช้";
+      // Check if receiver has muted this DM conversation
+      const { data: dmMute } = await adminClient
+        .from("notification_mutes")
+        .select("id")
+        .eq("user_id", receiver_id)
+        .eq("chat_type", "dm")
+        .eq("chat_id", sender_id)
+        .maybeSingle();
 
-      let preview = content ?? "";
-      if (media_type === "image") preview = "📷 ส่งรูปภาพ";
-      else if (media_type === "audio") preview = "🎤 ส่งข้อความเสียง";
-      else if (preview.length > 60) preview = preview.substring(0, 60) + "...";
+      if (!dmMute) {
+        const { data: sender } = await adminClient.from("users").select("display_name").eq("id", sender_id).maybeSingle();
+        const senderName = sender?.display_name ?? "ผู้ใช้";
 
-      await sendToUser(adminClient, sa, accessToken, receiver_id,
-        senderName, preview, `/direct/${sender_id}`, `dm-${sender_id}`, "messages");
+        let preview = content ?? "";
+        if (media_type === "image") preview = "📷 ส่งรูปภาพ";
+        else if (media_type === "audio") preview = "🎤 ส่งข้อความเสียง";
+        else if (preview.length > 60) preview = preview.substring(0, 60) + "...";
+
+        await sendToUser(adminClient, sa, accessToken, receiver_id,
+          senderName, preview, `/direct/${sender_id}`, `dm-${sender_id}`, "messages");
+      }
     }
 
     // ── Group Chat ────────────────────────────────────────────────────────────
     else if (table === "group_chat_messages") {
       const { user_id: senderId, group_chat_id, content, media_type } = record;
 
-      const [{ data: sender }, { data: groupChat }, { data: members }] = await Promise.all([
+      const [{ data: sender }, { data: groupChat }, { data: members }, { data: groupMutes }] = await Promise.all([
         adminClient.from("users").select("display_name").eq("id", senderId).maybeSingle(),
         adminClient.from("activity_group_chats").select("activity_id").eq("id", group_chat_id).maybeSingle(),
         adminClient.from("group_chat_members").select("user_id").eq("group_chat_id", group_chat_id),
+        // Fetch all mutes for this group in one query
+        adminClient.from("notification_mutes").select("user_id").eq("chat_type", "group").eq("chat_id", group_chat_id),
       ]);
 
       let activityTitle = "กลุ่มแชท";
@@ -219,7 +232,8 @@ Deno.serve(async (req) => {
       else if (media_type === "audio") preview = "🎤 ส่งข้อความเสียง";
       else if (preview.length > 60) preview = preview.substring(0, 60) + "...";
 
-      const recipients = (members ?? []).filter((m) => m.user_id !== senderId);
+      const mutedUserIds = new Set((groupMutes ?? []).map((m: { user_id: string }) => m.user_id));
+      const recipients = (members ?? []).filter((m) => m.user_id !== senderId && !mutedUserIds.has(m.user_id));
       await Promise.all(recipients.map((m) =>
         sendToUser(adminClient, sa, accessToken, m.user_id,
           activityTitle, `${senderName}: ${preview}`,
