@@ -66,7 +66,7 @@ export const ActivityCard = ({
   const navigate = useNavigate();
   const categoryData = category ? getSubCategoryById(category) : null;
   const formattedDate = startDate
-    ? format(new Date(startDate), "d MMM yyyy, HH:mm", { locale: getDateLocale(language) })
+    ? format(new Date(startDate), "d MMM yyyy", { locale: getDateLocale(language) })
     : null;
 
   const participantText = maxParticipants 
