@@ -56,11 +56,10 @@ export const useMessageNotifications = () => {
 
           if (!getNotificationsEnabled()) return;
           if (isDmMuted(msg.sender_id)) return;
+          if (window.location.pathname === `/direct/${msg.sender_id}`) return;
 
-          const isVisible = document.visibilityState === "visible";
-
-          // Push only when app is in background
-          if (!isVisible) {
+          // Web push when app is in background (PWA/browser only — native uses notify-on-message webhook)
+          if (document.visibilityState !== "visible") {
             triggerPush({
               userId: msg.receiver_id,
               title: senderName,
@@ -68,11 +67,7 @@ export const useMessageNotifications = () => {
               url: `/direct/${msg.sender_id}`,
               tag: `dm-${msg.sender_id}`,
             });
-            return;
           }
-
-          // In-App toast only when app is in foreground
-          if (window.location.pathname === `/direct/${msg.sender_id}`) return;
 
           const senderId = msg.sender_id;
           toast.custom(
@@ -142,10 +137,10 @@ export const useMessageNotifications = () => {
 
       if (!getNotificationsEnabled()) return;
       if (isGroupMuted(groupChatId)) return;
+      if (window.location.pathname === `/group-chat/${groupChatId}`) return;
 
-      const isVisible = document.visibilityState === "visible";
-
-      if (!isVisible) {
+      // Web push when app is in background (PWA/browser only — native uses notify-on-message webhook)
+      if (document.visibilityState !== "visible") {
         triggerPush({
           userId,
           title: activityTitle,
@@ -153,10 +148,7 @@ export const useMessageNotifications = () => {
           url: `/group-chat/${groupChatId}`,
           tag: `group-${groupChatId}`,
         });
-        return;
       }
-
-      if (window.location.pathname === `/group-chat/${groupChatId}`) return;
 
       toast.custom(
         (id) => (
