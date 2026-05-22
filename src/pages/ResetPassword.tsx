@@ -38,18 +38,17 @@ const ResetPassword = () => {
     });
 
     const prepare = async () => {
-      // 1. Session may already be set by Supabase's detectSessionInUrl auto-processing
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) { resolve(true); return; }
-
-      // 2. PKCE flow: ?code=xxx
+      // 1. PKCE flow: ?code=xxx — process first so recovery token takes precedence
       const code = searchParams.get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!error) { resolve(true); return; }
+        // Exchange failed (expired/invalid) — brief grace window for onAuthStateChange then fail
+        setTimeout(() => resolve(false), 500);
+        return;
       }
 
-      // 3. Implicit flow: #access_token=xxx&type=recovery — must call setSession explicitly
+      // 2. Implicit flow: #access_token=xxx (web or browsers that preserve the hash)
       const hash = window.location.hash.slice(1);
       if (hash) {
         const params = new URLSearchParams(hash);
@@ -64,8 +63,12 @@ const ResetPassword = () => {
         }
       }
 
-      // 4. Timeout fallback — give Supabase 5s to auto-fire PASSWORD_RECOVERY
-      setTimeout(() => resolve(false), 5000);
+      // 3. Session may already be set by Supabase auto-processing
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) { resolve(true); return; }
+
+      // 4. No token found — show invalid link immediately
+      resolve(false);
     };
 
     prepare();
