@@ -22,41 +22,58 @@ const ResetPassword = () => {
   const { t } = useLanguage();
 
   useEffect(() => {
+    let resolved = false;
+    const resolve = (ready: boolean) => {
+      if (resolved) return;
+      resolved = true;
+      setIsReady(ready);
+      setPreparing(false);
+    };
+
+    // Register listener SYNCHRONOUSLY before any async work so we never miss the event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session) {
+        resolve(true);
+      }
+    });
+
     const prepare = async () => {
-      // PKCE flow: ?code=xxx (native deep link / web)
+      // 1. Session may already be set by Supabase's detectSessionInUrl auto-processing
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) { resolve(true); return; }
+
+      // 2. PKCE flow: ?code=xxx
       const code = searchParams.get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-          setIsReady(true);
-          setPreparing(false);
-          return;
+        if (!error) { resolve(true); return; }
+      }
+
+      // 3. Implicit flow: #access_token=xxx&type=recovery — must call setSession explicitly
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token") ?? "";
+        if (accessToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (!error) { resolve(true); return; }
         }
       }
 
-      // Implicit flow: #type=recovery&access_token=xxx (web)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      if (hashParams.get("type") === "recovery") {
-        setIsReady(true);
-        setPreparing(false);
-        return;
-      }
-
-      // Listen for PASSWORD_RECOVERY event (Supabase handles token automatically)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setIsReady(true);
-          setPreparing(false);
-        }
-      });
-
-      // Give it a moment then give up if nothing arrives
-      setTimeout(() => setPreparing(false), 2000);
-
-      return () => subscription.unsubscribe();
+      // 4. Timeout fallback — give Supabase 5s to auto-fire PASSWORD_RECOVERY
+      setTimeout(() => resolve(false), 5000);
     };
 
     prepare();
+
+    return () => {
+      resolved = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
