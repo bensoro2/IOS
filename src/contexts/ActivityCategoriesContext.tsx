@@ -26,6 +26,18 @@ interface ActivityCategoriesContextValue {
 
 const ActivityCategoriesContext = createContext<ActivityCategoriesContextValue | null>(null);
 
+// Legacy keys stored in DB that have been renamed in the constants
+const LEGACY_KEY_MAP: Record<string, string> = {
+  boxing: "martial-arts",
+  "muay-thai": "martial-arts",
+  muaythai: "martial-arts",
+};
+
+const normalizeKey = (id: string): string => {
+  const hyphenated = id.replace(/_/g, "-").toLowerCase();
+  return LEGACY_KEY_MAP[hyphenated] ?? hyphenated;
+};
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const ActivityCategoriesProvider = ({ children }: { children: ReactNode }) => {
@@ -36,8 +48,10 @@ export const ActivityCategoriesProvider = ({ children }: { children: ReactNode }
     const getAllSubCategories = (): ActivitySubCategory[] =>
       categories.flatMap((cat) => cat.subCategories);
 
-    const getSubCategoryById = (id: string): ActivitySubCategory | undefined =>
-      getAllSubCategories().find((sub) => sub.id === id);
+    const getSubCategoryById = (id: string): ActivitySubCategory | undefined => {
+      const normalized = normalizeKey(id);
+      return getAllSubCategories().find((sub) => sub.id === normalized);
+    };
 
     const getCategoryById = (id: string): ActivityCategory | undefined =>
       categories.find((cat) => cat.id === id);
