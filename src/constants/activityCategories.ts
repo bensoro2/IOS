@@ -112,6 +112,18 @@ export const ACTIVITY_CATEGORIES: ActivityCategory[] = [
   },
 ];
 
+// Legacy DB keys → current constant ids
+const LEGACY_KEY_MAP: Record<string, string> = {
+  boxing: "martial-arts",
+  "muay-thai": "martial-arts",
+  muaythai: "martial-arts",
+};
+
+const normalizeSubCategoryId = (id: string): string => {
+  const hyphenated = id.replace(/_/g, "-").toLowerCase();
+  return LEGACY_KEY_MAP[hyphenated] ?? hyphenated;
+};
+
 // Helper functions
 export const getAllSubCategories = (): ActivitySubCategory[] => {
   return ACTIVITY_CATEGORIES.flatMap((cat) => cat.subCategories);
@@ -122,12 +134,14 @@ export const getCategoryById = (categoryId: string): ActivityCategory | undefine
 };
 
 export const getSubCategoryById = (subCategoryId: string): ActivitySubCategory | undefined => {
-  return getAllSubCategories().find((sub) => sub.id === subCategoryId);
+  const normalized = normalizeSubCategoryId(subCategoryId);
+  return getAllSubCategories().find((sub) => sub.id === normalized);
 };
 
 export const getCategoryBySubCategoryId = (subCategoryId: string): ActivityCategory | undefined => {
+  const normalized = normalizeSubCategoryId(subCategoryId);
   return ACTIVITY_CATEGORIES.find((cat) =>
-    cat.subCategories.some((sub) => sub.id === subCategoryId)
+    cat.subCategories.some((sub) => sub.id === normalized)
   );
 };
 
