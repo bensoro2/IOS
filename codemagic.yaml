@@ -19,7 +19,15 @@ workflows:
 
       - name: Fetch signing files
         script: |
-          CERT_KEY=$(openssl genrsa 2048)
+          # Reuse a persistent certificate key (stored as the CERT_KEY env var) so
+          # the same Distribution certificate is reused across builds. Generating a
+          # fresh key every run made Apple try to create a new cert each time and
+          # hit the certificate limit (409). Falls back to a throwaway key only if
+          # CERT_KEY is not set.
+          if [ -z "$CERT_KEY" ]; then
+            echo "WARNING: CERT_KEY env var not set — generating a throwaway key"
+            CERT_KEY=$(openssl genrsa 2048)
+          fi
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
