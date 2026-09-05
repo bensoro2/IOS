@@ -38,6 +38,7 @@ import BlockedUsersDialog from "@/components/BlockedUsersDialog";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import ThemeSelector from "@/components/ThemeSelector";
 import SubscriptionPlans from "@/components/SubscriptionPlans";
+import SubscriptionHistory from "@/components/SubscriptionHistory";
 import { toast } from "sonner";
 import { useNotificationPreference } from "@/hooks/useNotificationPreference";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -184,117 +185,40 @@ const Settings = () => {
         }
       }
 
-      // Find the promo code
-      const { data: codeData, error: codeError } = await supabase
-        .from("promo_codes")
-        .select("*")
-        .eq("code", promoCode.trim().toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
+      // Redeem promo code via secure RPC (handles premium + star_coin)
+      const { data: promoRaw, error: promoErr } = await supabase.rpc("redeem_promo_code", {
+        p_code: promoCode.trim(),
+      });
+      if (promoErr) throw promoErr;
 
-      if (codeError) throw codeError;
+      const promoRes = promoRaw as any;
 
-      if (!codeData) {
-        toast.error(t("toast.codeInvalid"));
+      if (promoRes?.error) {
+        const map: Record<string, string> = {
+          not_found: t("toast.codeInvalid"),
+          inactive: t("toast.codeInvalid"),
+          expired: t("toast.codeInvalid"),
+          max_uses_reached: t("toast.codeMaxUses"),
+          already_redeemed: t("toast.codeUsed"),
+        };
+        toast.error(map[promoRes.error] || t("toast.codeError"));
         return;
       }
-
-      // Check if code has reached max uses
-      if (codeData.max_uses !== null && codeData.current_uses >= codeData.max_uses) {
-        toast.error(t("toast.codeMaxUses"));
-        return;
-      }
-
-      // Check if user already redeemed this code
-      const { data: existingRedemption } = await supabase
-        .from("code_redemptions")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("code_id", codeData.id)
-        .maybeSingle();
-
-      if (existingRedemption) {
-        toast.error(t("toast.codeUsed"));
-        return;
-      }
-
-      // Handle check_plus type - give points instead of premium
-      if (codeData.plan_type === "check_plus") {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("check_plus_points")
-          .eq("id", user.id)
-          .single();
-
-        const currentPoints = userData?.check_plus_points || 0;
-        const { error: updateError } = await supabase
-          .from("users")
-          .update({ check_plus_points: currentPoints + 5 })
-          .eq("id", user.id);
-
-        if (updateError) throw updateError;
-
-        // Create redemption record after successful update
-        await supabase
-          .from("code_redemptions")
-          .insert({ user_id: user.id, code_id: codeData.id });
-
-        setPromoCode("");
-        setCheckPlusPoints(currentPoints + 5);
-        toast.success(t("toast.checkPlusRedeemSuccess"));
-        window.location.reload();
-        return;
-      }
-
-      // Create redemption record for premium codes
-      const { error: redemptionError } = await supabase
-        .from("code_redemptions")
-        .insert({
-          user_id: user.id,
-          code_id: codeData.id,
-        });
-
-      if (redemptionError) throw redemptionError;
-
-      // Calculate new premium end date
-      const now = new Date();
-      let newPremiumUntil: Date;
-      const planType = codeData.plan_type as PlanType;
-
-      // Check current premium status
-      const { data: currentPremium } = await supabase
-        .from("user_premium")
-        .select("premium_until, plan_type")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (currentPremium && new Date(currentPremium.premium_until) > now) {
-        newPremiumUntil = new Date(currentPremium.premium_until);
-        newPremiumUntil.setDate(newPremiumUntil.getDate() + codeData.premium_days);
-      } else {
-        newPremiumUntil = new Date(now);
-        newPremiumUntil.setDate(newPremiumUntil.getDate() + codeData.premium_days);
-      }
-
-      // Upsert premium status with plan_type
-      const { error: premiumError } = await supabase
-        .from("user_premium")
-        .upsert({
-          user_id: user.id,
-          premium_until: newPremiumUntil.toISOString(),
-          plan_type: planType,
-        }, {
-          onConflict: "user_id",
-        });
-
-      if (premiumError) throw premiumError;
 
       setPromoCode("");
-      const planLabel = planType === "gold" ? "Gold" : "Pro";
-      toast.success(t("toast.premiumRedeemSuccess").replace("{plan}", planLabel).replace("{days}", String(codeData.premium_days)));
-      
-      // Reload page to refresh premium status
-      window.location.reload();
+
+      if (promoRes?.type === "star_coin") {
+        toast.success(`ใส่โค้ดเรียบร้อยแล้ว +${promoRes.star_coins_added} Star Coin`);
+        // Soft refresh — no page reload (prevents screen flicker)
+        window.dispatchEvent(new CustomEvent("star-coins-updated"));
+        return;
+      }
+
+      const planLabel = promoRes?.plan === "gold" ? "Gold" : "Pro";
+      toast.success(
+        t("toast.premiumRedeemSuccess").replace("{plan}", planLabel).replace("{days}", "")
+      );
+      window.dispatchEvent(new CustomEvent("premium-updated"));
     } catch (error: any) {
       console.error("Error redeeming code:", error);
       toast.error(t("toast.codeError"));
@@ -334,9 +258,10 @@ const Settings = () => {
     setIsDeleting(true);
     try {
       const { data, error } = await supabase.rpc("delete_my_account");
+      const result = data as any;
 
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Delete failed");
+      if (!result?.success) throw new Error(result?.error || "Delete failed");
 
       toast.success(t("toast.accountDeleted"));
       await supabase.auth.signOut();
@@ -498,18 +423,19 @@ const Settings = () => {
 
 
         {/* สมัครสมาชิก (Subscription) Section */}
-        {/* <div className="space-y-1">
+        <div className="space-y-1">
           <h3 className="text-sm text-muted-foreground px-1 mb-2">{t("settings.subscription")}</h3>
           <div className="bg-card rounded-xl p-4">
             <SubscriptionPlans />
           </div>
-        </div> */}
+        </div>
+
 
         {/* โค้ดสิทธิพิเศษ (Promo Code) Section */}
         <div className="space-y-1">
           <div className="flex items-center justify-between px-1 mb-2">
             <h3 className="text-sm text-muted-foreground">{t("settings.promoCode")}</h3>
-            <span className="text-xs text-muted-foreground">{t("settings.checkPlusPoints")}: <span className="font-semibold text-primary">{checkPlusPoints}</span></span>
+            {/* Check Plus points hidden — being replaced by Star Coin system */}
           </div>
           <div className="bg-card rounded-xl p-4 space-y-3">
             <div className="flex gap-2">

@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Keyboard } from "@capacitor/keyboard";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ActivityCategoriesProvider } from "@/contexts/ActivityCategoriesContext";
@@ -11,34 +12,55 @@ import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { useCapacitorDeepLink } from "@/hooks/useCapacitorDeepLink";
 import { useFCMNotifications } from "@/hooks/useFCMNotifications";
 import { useDisplayNamePrompt } from "@/hooks/useDisplayNamePrompt";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Messages from "./pages/Messages";
-import GroupChat from "./pages/GroupChat";
-import DirectChat from "./pages/DirectChat";
-import UserProfile from "./pages/UserProfile";
-import NotFound from "./pages/NotFound";
-import Shop from "./pages/Shop";
+const Settings = lazy(() => import("./pages/Settings"));
+const Messages = lazy(() => import("./pages/Messages"));
+const GroupChat = lazy(() => import("./pages/GroupChat"));
+const DirectChat = lazy(() => import("./pages/DirectChat"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Shop = lazy(() => import("./pages/Shop"));
 // import Reels from "./pages/Reels";
 // import ReelsSearch from "./pages/ReelsSearch";
-import Notifications from "./pages/Notifications";
-import HelpCenter from "./pages/HelpCenter";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacySecurity from "./pages/PrivacySecurity";
-import ResetPassword from "./pages/ResetPassword";
-import ChangePassword from "./pages/ChangePassword";
+const Notifications = lazy(() => import("./pages/Notifications"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PrivacySecurity = lazy(() => import("./pages/PrivacySecurity"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ChangePassword = lazy(() => import("./pages/ChangePassword"));
 import AuthCallback from "./pages/AuthCallback";
-import TopRank from "./pages/TopRank";
-import HopeCoins from "./pages/HopeCoins";
-import JoinGroup from "./pages/JoinGroup";
+const TopRank = lazy(() => import("./pages/TopRank"));
+const HopeCoins = lazy(() => import("./pages/HopeCoins"));
+const StarCoins = lazy(() => import("./pages/StarCoins"));
+const JoinGroup = lazy(() => import("./pages/JoinGroup"));
+const AuthTerms = lazy(() => import("./pages/AuthTerms"));
+const AuthPrivacy = lazy(() => import("./pages/AuthPrivacy"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache aggressively: the app re-mounts pages constantly while navigating,
+      // and refetch-on-focus was multiplying requests on every tab switch.
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      retry: 1,
+    },
+  },
+});
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+  </div>
+);
 
 // Module-level flag: reset on sign-out, prevents double-redirect after callback
 let oauthProcessed = false;
@@ -80,6 +102,14 @@ const DeepLinkHandler = () => {
   return null;
 };
 
+const KeyboardDismissOnNavigate = () => {
+  const location = useLocation();
+  useEffect(() => {
+    Keyboard.hide().catch(() => {});
+  }, [location.pathname]);
+  return null;
+};
+
 const AppSetup = () => {
   useSyncUserRow();
   useMessageNotifications();
@@ -117,33 +147,41 @@ const App = () => {
             <AppSetup />
             <OAuthRedirectHandler />
             <DeepLinkHandler />
+            <KeyboardDismissOnNavigate />
             <TranslatingBanner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/user/:userId" element={<UserProfile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/group-chat/:id" element={<GroupChat />} />
-              <Route path="/direct/:odirectId" element={<DirectChat />} />
-              <Route path="/shop" element={<Shop />} />
-              {/* <Route path="/reels" element={<Reels />} /> */}
-              {/* <Route path="/reels/search" element={<ReelsSearch />} /> */}
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/help" element={<HelpCenter />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/privacy-security" element={<PrivacySecurity />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/change-password" element={<ChangePassword />} />
-              <Route path="/top-rank" element={<TopRank />} />
-              <Route path="/hope-coins" element={<HopeCoins />} />
-              <Route path="/join-group/:groupChatId" element={<JoinGroup />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="app-shell mx-auto w-full max-w-[480px] md:max-w-[520px] min-h-screen bg-background relative md:shadow-2xl md:border-x md:border-border">
+              <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/auth/terms" element={<AuthTerms />} />
+                <Route path="/auth/privacy-policy" element={<AuthPrivacy />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/user/:userId" element={<UserProfile />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/group-chat/:id" element={<GroupChat />} />
+                <Route path="/direct/:odirectId" element={<DirectChat />} />
+                <Route path="/shop" element={<Shop />} />
+                {/* <Route path="/reels" element={<Reels />} /> */}
+                {/* <Route path="/reels/search" element={<ReelsSearch />} /> */}
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/help" element={<HelpCenter />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy-security" element={<PrivacySecurity />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/change-password" element={<ChangePassword />} />
+                <Route path="/top-rank" element={<TopRank />} />
+                <Route path="/hope-coins" element={<HopeCoins />} />
+                <Route path="/star-coins" element={<StarCoins />} />
+                <Route path="/join-group/:groupChatId" element={<JoinGroup />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </Suspense>
+            </div>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

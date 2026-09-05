@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RotateCw } from "lucide-react";
-import levelCoinImg from "@/assets/level-coin.png";
+import { levelCoinImg } from "@/assets/levelCoin";
 
 const FUNDING_TARGET = 1_000_000_000_000;
 

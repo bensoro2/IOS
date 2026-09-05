@@ -1,180 +1,382 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
 
-const ThaiPrivacySections = [
+/**
+ * นโยบายความเป็นส่วนตัว (Privacy Policy)
+ * ฉบับภาษาไทยเป็นฉบับที่มีผลบังคับใช้ตามกฎหมายเพียงฉบับเดียว
+ * Thai version is the sole legally binding version.
+ * สอดคล้องกับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) และแนวปฏิบัติสากล (GDPR, COPPA)
+ */
+
+const P = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <p className={`text-sm text-muted-foreground leading-relaxed ${className}`}>{children}</p>
+);
+
+const Strong = ({ children }: { children: React.ReactNode }) => (
+  <strong className="text-foreground">{children}</strong>
+);
+
+const UL = ({ children }: { children: React.ReactNode }) => (
+  <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-outside space-y-1 pl-5">{children}</ul>
+);
+
+export const ThaiPrivacySections: { title: string; content: React.ReactNode }[] = [
   {
-    title: "1. ข้อมูลที่แอปพลิเคชันเก็บรวบรวม",
+    title: "1. บทนำและขอบเขตของนโยบาย",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          แอปพลิเคชันเก็บรวบรวมข้อมูลจากผู้ใช้งานในหลายรูปแบบ เพื่อให้สามารถให้บริการได้อย่างมีประสิทธิภาพ:
-        </p>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-1">
-          <strong className="text-foreground">ข้อมูลที่ผู้ใช้งานให้โดยตรง:</strong>
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li>ชื่อที่แสดง (Display Name) และรูปโปรไฟล์</li>
-          <li>อีเมลที่ใช้ลงทะเบียนหรือเข้าสู่ระบบ</li>
-          <li>เบอร์โทรศัพท์ และวันเกิด (หากกรอก)</li>
-          <li>ข้อมูล Bio และคำอธิบายตนเอง</li>
-          <li>ข้อมูลกิจกรรม เช่น Check-in, Interest, การสร้างกิจกรรม</li>
-          <li>เนื้อหา Reels (วิดีโอ, คำบรรยาย, หมวดหมู่)</li>
-          <li>ข้อความในแชท (กลุ่มและส่วนตัว)</li>
-          <li>ข้อมูลร้านค้าที่สร้างในระบบ Shop</li>
-        </ul>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-1">
-          <strong className="text-foreground">ข้อมูลที่เก็บโดยอัตโนมัติ:</strong>
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li>IP Address และตำแหน่งโดยประมาณ</li>
-          <li>ประเภทอุปกรณ์ ระบบปฏิบัติการ และเวอร์ชันเบราว์เซอร์</li>
-          <li>ข้อมูลการใช้งาน เช่น หน้าที่เข้าชม ระยะเวลาการใช้งาน</li>
-          <li>ข้อมูล Push Notification Token (FCM Token)</li>
-        </ul>
+        <P>
+          นโยบายความเป็นส่วนตัวฉบับนี้ (ต่อไปนี้เรียกว่า <Strong>"นโยบาย"</Strong>) อธิบายวิธีที่แอปพลิเคชัน <Strong>Levelon</Strong> (ต่อไปนี้เรียกว่า <Strong>"เรา" "ผู้ให้บริการ" หรือ "Levelon"</Strong>) เก็บรวบรวม ใช้ เปิดเผย จัดเก็บ และปกป้องข้อมูลส่วนบุคคลของผู้ใช้งาน (<Strong>"คุณ"</Strong>)
+        </P>
+        <P>
+          นโยบายฉบับนี้จัดทำขึ้นตาม <Strong>พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</Strong> ของประเทศไทย และอ้างอิงแนวปฏิบัติสากลอื่น เช่น GDPR (สหภาพยุโรป) และ COPPA (สหรัฐอเมริกา) เท่าที่เกี่ยวข้อง
+        </P>
+        <P>
+          การเข้าถึงหรือใช้งานบริการถือว่าคุณได้อ่าน เข้าใจ และยินยอมให้เราประมวลผลข้อมูลของคุณตามนโยบายฉบับนี้ หากคุณไม่ยอมรับ กรุณาหยุดใช้งานทันที
+        </P>
+        <P>
+          <Strong>ฉบับภาษาไทยเป็นฉบับที่มีผลบังคับใช้ตามกฎหมาย</Strong> การแปลเป็นภาษาอื่นจัดทำเพื่อความสะดวกเท่านั้น หากเกิดข้อขัดแย้ง ให้ยึดฉบับภาษาไทย
+        </P>
       </>
     ),
   },
   {
-    title: "2. วัตถุประสงค์การใช้ข้อมูล",
+    title: "2. ผู้ควบคุมข้อมูลส่วนบุคคลและช่องทางติดต่อ",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          แอปพลิเคชันใช้ข้อมูลที่เก็บรวบรวมเพื่อวัตถุประสงค์ดังต่อไปนี้:
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li><strong className="text-foreground">การให้บริการ:</strong> เพื่อให้ผู้ใช้งานสามารถใช้งานฟีเจอร์ต่างๆ เช่น Check-in, แชท, Reels, ร้านค้า และการจัดกิจกรรม</li>
-          <li><strong className="text-foreground">การยืนยันตัวตน:</strong> เพื่อตรวจสอบและรักษาความปลอดภัยของบัญชีผู้ใช้งาน</li>
-          <li><strong className="text-foreground">ระบบ Level/EXP:</strong> เพื่อคำนวณคะแนน EXP, ระดับ Level และจัดอันดับผู้ใช้งาน</li>
-          <li><strong className="text-foreground">การแจ้งเตือน:</strong> เพื่อส่งการแจ้งเตือนเกี่ยวกับข้อความ กิจกรรม และการอัปเดตที่สำคัญ</li>
-          <li><strong className="text-foreground">การปรับปรุงบริการ:</strong> เพื่อวิเคราะห์พฤติกรรมการใช้งานและพัฒนาประสบการณ์ของผู้ใช้งาน</li>
-          <li><strong className="text-foreground">ความปลอดภัย:</strong> เพื่อตรวจจับและป้องกันการใช้งานที่ไม่เหมาะสม การฉ้อโกง หรือการละเมิดข้อกำหนด</li>
-          <li><strong className="text-foreground">การปฏิบัติตามกฎหมาย:</strong> เพื่อปฏิบัติตามข้อกำหนดทางกฎหมายที่เกี่ยวข้อง</li>
-        </ul>
+        <P>
+          ผู้ควบคุมข้อมูลส่วนบุคคล (Data Controller) ของบริการนี้ คือ <Strong>ห้างหุ้นส่วนจำกัด ไลออน ฮาร์ท (Lion Heart Limited Partnership)</Strong> ในฐานะผู้พัฒนาและดำเนินงานแอปพลิเคชัน <Strong>Levelon</Strong> ตั้งอยู่ในประเทศไทย
+        </P>
+        <P>
+          ปัจจุบัน ห้างหุ้นส่วนจำกัด ไลออน ฮาร์ท ยังไม่ได้แต่งตั้งเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO) อย่างเป็นทางการ เนื่องจากขนาดของบริการยังไม่เข้าเกณฑ์บังคับตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 อย่างไรก็ตาม ผู้พัฒนาจะทำหน้าที่รับเรื่องและตอบข้อร้องเรียนด้านข้อมูลส่วนบุคคลด้วยตนเอง และจะแต่งตั้ง DPO เพิ่มเติมเมื่อขนาดผู้ใช้ถึงเกณฑ์ตามกฎหมาย
+        </P>
+        <P>
+          หากคุณมีคำถาม ต้องการใช้สิทธิของเจ้าของข้อมูล หรือต้องการร้องเรียนเกี่ยวกับการประมวลผลข้อมูล กรุณาติดต่อ:
+        </P>
+        <UL>
+          <li>อีเมล (ช่องทางหลัก): <Strong>levelon.app@gmail.com</Strong></li>
+          <li>ผ่านระบบ Help Center / Support ในแอปพลิเคชัน</li>
+        </UL>
+        <P>
+          หากคุณเห็นว่าเราไม่ปฏิบัติตามกฎหมาย คุณมีสิทธิยื่นเรื่องร้องเรียนต่อ <Strong>สำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (สคส.)</Strong> แห่งประเทศไทย
+        </P>
       </>
     ),
   },
   {
-    title: "3. การเปิดเผยข้อมูล",
+    title: "3. ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          แอปพลิเคชันอาจเปิดเผยข้อมูลของผู้ใช้งานในกรณีดังต่อไปนี้:
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li><strong className="text-foreground">ผู้ให้บริการที่เกี่ยวข้อง:</strong> เช่น Supabase (ระบบฐานข้อมูลและ Authentication), Stripe (ระบบชำระเงิน), Firebase (ระบบแจ้งเตือน Push Notification)</li>
-          <li><strong className="text-foreground">ข้อมูลสาธารณะ:</strong> ข้อมูลโปรไฟล์, กิจกรรม, Reels และร้านค้าที่ผู้ใช้งานตั้งค่าเป็นสาธารณะจะสามารถมองเห็นได้โดยผู้ใช้งานอื่น</li>
-          <li><strong className="text-foreground">ตามกฎหมาย:</strong> เมื่อได้รับคำสั่งจากศาลหรือหน่วยงานราชการที่มีอำนาจ</li>
-          <li><strong className="text-foreground">การปกป้องสิทธิ:</strong> เพื่อปกป้องสิทธิ ทรัพย์สิน หรือความปลอดภัยของ Levelon และผู้ใช้งาน</li>
-        </ul>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-2 font-medium text-foreground">
-          แอปพลิเคชันจะไม่ขายข้อมูลส่วนตัวของผู้ใช้งานให้แก่บุคคลที่สามเพื่อวัตถุประสงค์ทางการตลาดโดยเด็ดขาด
-        </p>
+        <P><Strong>3.1 ข้อมูลที่คุณให้แก่เราโดยตรง</Strong></P>
+        <UL>
+          <li>ข้อมูลบัญชี: อีเมล, รหัสผ่าน (จัดเก็บแบบแฮชโดย Supabase Auth), ชื่อที่แสดง, รูปโปรไฟล์</li>
+          <li>ข้อมูลโปรไฟล์: Bio, เพศ, วันเกิด, จังหวัด/ประเทศ, ความสนใจ</li>
+          <li>เนื้อหาผู้ใช้: โพสต์กิจกรรม, Reels (วิดีโอ/คำบรรยาย), ข้อความแชทกลุ่มและส่วนตัว, ข้อมูลร้านค้า, ความคิดเห็น, การไลก์</li>
+          <li>ข้อมูลการชำระเงิน: หมายเลขอ้างอิงคำสั่งซื้อและสถานะการชำระเงินผ่าน Stripe (เราไม่จัดเก็บหมายเลขบัตร/บัญชีธนาคารของคุณโดยตรง)</li>
+          <li>การรายงาน / การติดต่อ Support: เนื้อหาที่คุณส่งเข้ามา</li>
+        </UL>
+        <P className="pt-1"><Strong>3.2 ข้อมูลที่ถูกเก็บโดยอัตโนมัติ</Strong></P>
+        <UL>
+          <li>IP Address, ประเภทอุปกรณ์, ระบบปฏิบัติการ, เวอร์ชันเบราว์เซอร์, ภาษา</li>
+          <li>Device Token สำหรับ Push Notification (FCM, APNs, Web Push)</li>
+          <li>ข้อมูลการใช้งาน: หน้าที่เข้าชม, การกดปุ่ม, เวลาใช้งาน, ประวัติการเช็คอิน</li>
+          <li>Log การเข้าสู่ระบบ, การเปลี่ยนแปลงบัญชี, และเหตุการณ์เพื่อความปลอดภัย</li>
+          <li>Cookies / Local Storage สำหรับ Session และการตั้งค่า</li>
+        </UL>
+        <P className="pt-1"><Strong>3.3 ข้อมูลจากบุคคลที่สาม</Strong></P>
+        <UL>
+          <li>ข้อมูลจาก Google เมื่อคุณเข้าสู่ระบบด้วย Google OAuth (อีเมล, ชื่อ, รูปโปรไฟล์)</li>
+          <li>ข้อมูลจาก Facebook (Meta) เมื่อคุณเข้าสู่ระบบด้วย Facebook Login (อีเมล, ชื่อ, รูปโปรไฟล์ตามที่คุณอนุญาต)</li>
+          <li>ข้อมูลสถานะการชำระเงินจาก Stripe</li>
+        </UL>
+        <P className="pt-1"><Strong>3.4 ข้อมูลที่เราไม่เก็บ</Strong></P>
+        <UL>
+          <li>เราไม่เก็บพิกัด GPS แบบละเอียด (เก็บเฉพาะจังหวัด/ประเทศที่คุณเลือกเอง)</li>
+          <li>เราไม่เก็บหมายเลขบัตรเครดิต/บัตรเดบิต/เลขบัญชีธนาคารของคุณ</li>
+          <li>เราไม่เก็บข้อมูลชีวภาพ (Biometric) หรือข้อมูลอ่อนไหวโดยไม่ได้รับความยินยอมชัดแจ้ง</li>
+        </UL>
       </>
     ),
   },
   {
-    title: "4. การตั้งค่าความเป็นส่วนตัว",
+    title: "4. วัตถุประสงค์และฐานทางกฎหมายในการประมวลผล",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          ผู้ใช้งานสามารถควบคุมความเป็นส่วนตัวของข้อมูลได้ผ่านการตั้งค่าในแอปพลิเคชัน:
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li><strong className="text-foreground">กิจกรรม:</strong> เลือกให้กิจกรรมเป็นแบบสาธารณะ (ทุกคนเห็น) หรือส่วนตัว (ต้องขอเข้าร่วม)</li>
-          <li><strong className="text-foreground">การบล็อก:</strong> บล็อกผู้ใช้งานที่ไม่ต้องการให้เห็นเนื้อหาหรือติดต่อได้</li>
-          <li><strong className="text-foreground">การแจ้งเตือน:</strong> ปิด/เปิดการแจ้งเตือนสำหรับแชทกลุ่ม ข้อความส่วนตัว และกิจกรรมต่างๆ</li>
-          <li><strong className="text-foreground">โปรไฟล์:</strong> แก้ไขข้อมูลส่วนตัวที่แสดงต่อสาธารณะ เช่น ชื่อ รูปโปรไฟล์ Bio</li>
-          <li><strong className="text-foreground">การระงับบัญชี:</strong> ระงับบัญชีชั่วคราวเพื่อซ่อนโปรไฟล์และเนื้อหาทั้งหมดจากผู้ใช้งานอื่น</li>
-        </ul>
+        <P>เราประมวลผลข้อมูลของคุณตามฐานทางกฎหมายต่อไปนี้:</P>
+        <UL>
+          <li><Strong>ฐานสัญญา (Contractual):</Strong> เพื่อให้บริการฟีเจอร์หลัก เช่น การสมัคร, การเช็คอิน, แชท, Reels, ร้านค้า, ระบบ Level/EXP, การชำระเงิน Level Coin</li>
+          <li><Strong>ฐานความยินยอม (Consent):</Strong> การส่ง Push Notification การตลาด, การใช้งานฟีเจอร์ที่ต้องขอสิทธิ์เพิ่ม (เช่น กล้อง, ไมโครโฟน)</li>
+          <li><Strong>ฐานประโยชน์อันชอบธรรม (Legitimate Interests):</Strong> การรักษาความปลอดภัย, ป้องกันการฉ้อโกง, ตรวจจับสแปม, ปรับปรุงบริการ, วิเคราะห์การใช้งานเชิงสถิติแบบไม่ระบุตัวตน</li>
+          <li><Strong>ฐานหน้าที่ตามกฎหมาย (Legal Obligation):</Strong> การเก็บหลักฐานตามพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ พ.ศ. 2550 และกฎหมายอื่น</li>
+          <li><Strong>ฐานประโยชน์สำคัญของชีวิต (Vital Interests):</Strong> กรณีมีภัยคุกคามต่อชีวิตหรือความปลอดภัยของบุคคล</li>
+        </UL>
       </>
     ),
   },
   {
-    title: "5. สิทธิของผู้ใช้งาน",
+    title: "5. การเปิดเผยข้อมูลให้บุคคลที่สาม",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          ภายใต้กฎหมายคุ้มครองข้อมูลส่วนบุคคล (PDPA) และกฎหมายที่เกี่ยวข้อง ผู้ใช้งานมีสิทธิดังต่อไปนี้:
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li><strong className="text-foreground">สิทธิในการเข้าถึง:</strong> ขอดูข้อมูลส่วนตัวที่แอปพลิเคชันจัดเก็บไว้</li>
-          <li><strong className="text-foreground">สิทธิในการแก้ไข:</strong> แก้ไขข้อมูลที่ไม่ถูกต้องหรือไม่เป็นปัจจุบันผ่านหน้าตั้งค่าโปรไฟล์</li>
-          <li><strong className="text-foreground">สิทธิในการลบ:</strong> ขอให้ลบข้อมูลส่วนตัวและบัญชีผู้ใช้งานออกจากระบบ</li>
-          <li><strong className="text-foreground">สิทธิในการคัดค้าน:</strong> คัดค้านการประมวลผลข้อมูลในบางกรณี</li>
-          <li><strong className="text-foreground">สิทธิในการโอนย้าย:</strong> ขอรับข้อมูลส่วนตัวในรูปแบบที่สามารถอ่านได้</li>
-        </ul>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-2">
-          หากต้องการใช้สิทธิข้างต้น กรุณาติดต่อแอปพลิเคชันผ่านอีเมล <strong className="text-foreground">levelon.app@gmail.com</strong> หรือผ่านระบบ Support ในแอปพลิเคชัน แอปพลิเคชันจะดำเนินการภายใน 30 วันนับจากวันที่ได้รับคำร้อง
-        </p>
+        <P>เราเปิดเผยข้อมูลของคุณเฉพาะกรณีต่อไปนี้:</P>
+        <P className="pt-1"><Strong>5.1 ผู้ให้บริการภายนอก (Data Processors)</Strong></P>
+        <UL>
+          <li><Strong>Supabase:</Strong> ระบบฐานข้อมูล, Authentication, Storage, Realtime</li>
+          <li><Strong>Stripe:</Strong> ประมวลผลการชำระเงินผ่าน PromptPay</li>
+          <li><Strong>Google (Firebase Cloud Messaging):</Strong> ส่ง Push Notification บน Android/Web</li>
+          <li><Strong>Apple (APNs):</Strong> ส่ง Push Notification บน iOS</li>
+          <li><Strong>Google (OAuth):</Strong> การเข้าสู่ระบบด้วย Google</li>
+          <li><Strong>Meta Platforms / Facebook (OAuth):</Strong> การเข้าสู่ระบบด้วย Facebook Login</li>
+          <li><Strong>Google Gemini (AI Vision):</Strong> ตรวจสอบเนื้อหารูปภาพ/วิดีโอโดยอัตโนมัติ (Content Moderation)</li>
+          <li><Strong>Brevo:</Strong> ส่งอีเมลระบบและการยืนยันตัวตน</li>
+          <li><Strong>Lovable:</Strong> ผู้ให้บริการโครงสร้างพื้นฐานและ AI Gateway</li>
+        </UL>
+        <P className="pt-1">
+          ผู้ให้บริการเหล่านี้ประมวลผลข้อมูลตามคำสั่งของเราเท่านั้น และผูกพันตามข้อตกลงประมวลผลข้อมูล (Data Processing Agreement)
+        </P>
+        <P className="pt-1"><Strong>5.2 ผู้ใช้งานคนอื่นในแอป</Strong></P>
+        <UL>
+          <li>โปรไฟล์สาธารณะ, กิจกรรม, Reels, ร้านค้า, ความคิดเห็น จะปรากฏต่อผู้ใช้งานอื่นตามการตั้งค่าของคุณ</li>
+          <li>ข้อความในแชทกลุ่มจะปรากฏต่อสมาชิกทุกคนในกลุ่ม</li>
+        </UL>
+        <P className="pt-1"><Strong>5.3 หน่วยงานของรัฐ / กระบวนการทางกฎหมาย</Strong></P>
+        <UL>
+          <li>เมื่อได้รับหมายศาล คำสั่งพนักงานสอบสวน หรือคำสั่งของหน่วยงานที่มีอำนาจตามกฎหมาย</li>
+          <li>เพื่อป้องกันการกระทำผิดกฎหมาย ปกป้องสิทธิ ทรัพย์สิน หรือความปลอดภัยของ Levelon และผู้ใช้งาน</li>
+          <li>กรณีเนื้อหา CSAE/CSAM เราจะรายงานต่อหน่วยงานที่เกี่ยวข้อง เช่น NCMEC และตำรวจไทย</li>
+        </UL>
+        <P className="pt-2 font-medium text-foreground">
+          เรา<Strong>ไม่ขาย</Strong>ข้อมูลส่วนบุคคลของคุณให้แก่บุคคลที่สามเพื่อวัตถุประสงค์ทางการตลาดโดยเด็ดขาด
+        </P>
       </>
     ),
   },
   {
-    title: "6. ความปลอดภัย",
+    title: "6. การโอนข้อมูลข้ามพรมแดน",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          แอปพลิเคชันมุ่งมั่นในการปกป้องข้อมูลของผู้ใช้งานด้วยมาตรการรักษาความปลอดภัยที่เข้มงวด:
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li><strong className="text-foreground">การเข้ารหัส:</strong> ข้อมูลทั้งหมดถูกเข้ารหัสระหว่างการส่งผ่าน (TLS/SSL) และจัดเก็บอย่างปลอดภัย</li>
-          <li><strong className="text-foreground">การยืนยันตัวตน:</strong> ใช้ระบบ Authentication มาตรฐานสากล รองรับ Email/Password และ OAuth (Google)</li>
-          <li><strong className="text-foreground">Row Level Security:</strong> ฐานข้อมูลใช้ระบบ RLS เพื่อให้ผู้ใช้งานเข้าถึงได้เฉพาะข้อมูลที่ได้รับอนุญาต</li>
-          <li><strong className="text-foreground">การตรวจสอบเนื้อหา:</strong> มีระบบ Content Moderation เพื่อคัดกรองเนื้อหาที่ไม่เหมาะสม</li>
-          <li><strong className="text-foreground">การรายงาน:</strong> ผู้ใช้งานสามารถรายงานเนื้อหาหรือบัญชีที่ละเมิดข้อกำหนดได้ทันที</li>
-        </ul>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-2">
-          แม้แอปพลิเคชันจะใช้มาตรการที่เหมาะสม แต่ไม่มีระบบใดปลอดภัย 100% ผู้ใช้งานควรรักษารหัสผ่านและไม่แชร์ข้อมูลการเข้าสู่ระบบกับผู้อื่น
-        </p>
+        <P>
+          ผู้ให้บริการบางรายที่ระบุในข้อ 5 มีเซิร์ฟเวอร์อยู่ภายนอกประเทศไทย เช่น สหรัฐอเมริกา สิงคโปร์ หรือประเทศในสหภาพยุโรป การใช้บริการของคุณจึงอาจมีการโอนข้อมูลไปประเทศดังกล่าว
+        </P>
+        <P>
+          เราเลือกใช้ผู้ให้บริการที่มีมาตรฐานความปลอดภัยระดับสากล และมีสัญญาที่กำหนดให้คุ้มครองข้อมูลไม่ต่ำกว่ามาตรฐาน PDPA
+        </P>
       </>
     ),
   },
   {
-    title: "7. ความปลอดภัยของเด็ก",
+    title: "7. ระยะเวลาการเก็บรักษาข้อมูล",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          แอปพลิเคชันมีนโยบายไม่ยอมรับเนื้อหาที่เกี่ยวข้องกับการล่วงละเมิดทางเพศเด็ก (CSAE — Child Sexual Abuse and Exploitation) หรือสื่อการล่วงละเมิดทางเพศเด็ก (CSAM — Child Sexual Abuse Material) ทุกรูปแบบอย่างเด็ดขาด ซึ่งรวมถึงแต่ไม่จำกัดเพียง:
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
+        <UL>
+          <li><Strong>ข้อมูลบัญชีและโปรไฟล์:</Strong> เก็บตลอดระยะเวลาที่บัญชียังใช้งานอยู่</li>
+          <li><Strong>เนื้อหาผู้ใช้ (โพสต์, Reels, แชท, ร้านค้า):</Strong> เก็บจนกว่าคุณจะลบด้วยตนเอง หรือเราลบตามนโยบาย</li>
+          <li><Strong>ข้อมูลการชำระเงินและใบเสร็จ:</Strong> เก็บอย่างน้อย 5 ปี ตามกฎหมายภาษีและบัญชี</li>
+          <li><Strong>Log ระบบและ Log ความปลอดภัย:</Strong> เก็บอย่างน้อย 90 วัน และไม่เกิน 2 ปี ตามพระราชบัญญัติว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์</li>
+          <li><Strong>ข้อมูลของบัญชีที่ถูกลบ:</Strong> ข้อมูลส่วนบุคคลจะถูกลบภายใน 30 วัน ยกเว้นข้อมูลที่กฎหมายกำหนดให้เก็บต่อ หรือข้อมูลที่จำเป็นต่อการดำเนินคดี/การป้องกันการฉ้อโกง</li>
+          <li><Strong>ข้อมูลของผู้ใช้ที่ถูกระงับถาวรจากการละเมิดกฎ:</Strong> อาจเก็บรายการอ้างอิงเพื่อป้องกันการสมัครใหม่</li>
+        </UL>
+      </>
+    ),
+  },
+  {
+    title: "8. สิทธิของเจ้าของข้อมูลตาม PDPA",
+    content: (
+      <>
+        <P>ในฐานะเจ้าของข้อมูลส่วนบุคคล คุณมีสิทธิดังต่อไปนี้:</P>
+        <UL>
+          <li><Strong>สิทธิเข้าถึงข้อมูล (Right to Access):</Strong> ขอสำเนาข้อมูลที่เราเก็บเกี่ยวกับคุณ</li>
+          <li><Strong>สิทธิแก้ไขข้อมูล (Right to Rectification):</Strong> แก้ไขให้ถูกต้องและเป็นปัจจุบัน</li>
+          <li><Strong>สิทธิลบข้อมูล (Right to Erasure / Right to be Forgotten):</Strong> ผ่านปุ่ม "ลบบัญชี" ในการตั้งค่า หรือส่งคำร้องมาที่อีเมล</li>
+          <li><Strong>สิทธิระงับการใช้ข้อมูล (Right to Restrict):</Strong> ขอให้ระงับการประมวลผลชั่วคราว</li>
+          <li><Strong>สิทธิคัดค้านการประมวลผล (Right to Object):</Strong> คัดค้านการประมวลผลบนฐานประโยชน์อันชอบธรรมหรือการตลาด</li>
+          <li><Strong>สิทธิให้โอนย้ายข้อมูล (Right to Data Portability):</Strong> ขอรับข้อมูลในรูปแบบที่อ่านได้ด้วยเครื่อง</li>
+          <li><Strong>สิทธิถอนความยินยอม (Right to Withdraw Consent):</Strong> ถอนความยินยอมที่ให้ไว้ได้ตลอดเวลา โดยไม่กระทบการประมวลผลก่อนถอน</li>
+          <li><Strong>สิทธิร้องเรียน (Right to Lodge a Complaint):</Strong> ยื่นเรื่องต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล</li>
+        </UL>
+        <P className="pt-2">
+          กรุณาส่งคำร้องมาที่ <Strong>levelon.app@gmail.com</Strong> เราจะตอบกลับภายใน <Strong>30 วัน</Strong> นับจากวันที่ได้รับ ทั้งนี้เราอาจต้องขอเอกสารยืนยันตัวตนก่อนดำเนินการเพื่อป้องกันการปลอมแปลง
+        </P>
+      </>
+    ),
+  },
+  {
+    title: "9. ความเป็นส่วนตัวของเด็กและเยาวชน",
+    content: (
+      <>
+        <P>
+          บริการนี้อนุญาตให้ใช้เฉพาะบุคคลที่มีอายุตั้งแต่ <Strong>13 ปีบริบูรณ์ขึ้นไป</Strong> เราไม่รวบรวมข้อมูลจากเด็กอายุต่ำกว่า 13 ปีโดยเจตนา
+        </P>
+        <P>
+          <Strong>ผู้ใช้อายุ 13–19 ปี (ผู้เยาว์ตามกฎหมายไทย):</Strong> ก่อนสมัครใช้งาน คุณ<Strong>ต้อง</Strong>ได้รับความยินยอมจากบิดามารดาหรือผู้ปกครองตามกฎหมายอย่างชัดแจ้ง การกดยอมรับข้อตกลงและใช้บริการถือเป็นการยืนยันว่าได้รับความยินยอมดังกล่าวแล้ว
+        </P>
+        <P>
+          ปัจจุบันเรายัง<Strong>ไม่มีระบบตรวจสอบอายุหรือยืนยันตัวตนของผู้ปกครองด้วยเทคนิค</Strong> (เช่น ID verification) จึงต้องอาศัยการรับรองด้วยความสุจริตของผู้ใช้ ผู้ปกครองมีหน้าที่กำกับดูแลการใช้งานของผู้เยาว์อย่างใกล้ชิด และสามารถขอให้ระงับ/ลบบัญชีของบุตรหลานได้ทุกเมื่อ
+        </P>
+        <P>
+          หากคุณเป็นผู้ปกครองและพบว่าบุตรหลานอายุต่ำกว่า 13 ปีใช้บริการ หรือไม่ประสงค์ให้บุตรหลานอายุ 13–19 ปีใช้บริการต่อ กรุณาแจ้งเราที่ <Strong>levelon.app@gmail.com</Strong> เพื่อระงับและลบข้อมูลของบัญชีดังกล่าวโดยเร็วที่สุด (ปกติภายใน 7 วันทำการ)
+        </P>
+        <P>
+          เรากำลังพัฒนามาตรการเพิ่มเติมเพื่อคุ้มครองผู้เยาว์ เช่น การจำกัดฟีเจอร์บางอย่างสำหรับบัญชีผู้เยาว์ และช่องทางยืนยันความยินยอมของผู้ปกครองในอนาคต
+        </P>
+      </>
+    ),
+  },
+  {
+    title: "10. นโยบายต่อต้าน CSAE/CSAM",
+    content: (
+      <>
+        <P>
+          Levelon มีนโยบาย <Strong>ไม่ยอมรับโดยเด็ดขาด (Zero Tolerance)</Strong> ต่อการล่วงละเมิดทางเพศเด็ก (CSAE) และสื่อการล่วงละเมิดทางเพศเด็ก (CSAM) ทุกรูปแบบ ครอบคลุมถึง:
+        </P>
+        <UL>
           <li>เนื้อหาหรือพฤติกรรมที่แสวงหาประโยชน์ทางเพศจากเด็ก</li>
           <li>การล่อลวง ชักจูง หรือสร้างความสัมพันธ์ที่ไม่เหมาะสมกับผู้เยาว์ (Grooming)</li>
           <li>การค้าเด็กเพื่อวัตถุประสงค์ทางเพศ</li>
-          <li>การเผยแพร่ จัดเก็บ หรือแบ่งปันสื่อที่มีเนื้อหาล่วงละเมิดเด็ก</li>
+          <li>การเผยแพร่ จัดเก็บ หรือแบ่งปันสื่อ CSAM</li>
           <li>การบูลลี่ คุกคาม หรือข่มขู่เด็กและเยาวชน</li>
-        </ul>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-1">
-          <strong className="text-foreground">มาตรการของแอปพลิเคชัน:</strong>
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li>ผู้ใช้งานสามารถรายงานเนื้อหาหรือพฤติกรรมที่ไม่เหมาะสมผ่านระบบรายงานในแอปพลิเคชัน หรือติดต่อโดยตรงที่อีเมล <strong className="text-foreground">levelon.app@gmail.com</strong></li>
-          <li>เนื้อหาที่ละเมิดจะถูกลบออกทันทีเมื่อตรวจพบ และบัญชีผู้กระทำผิดจะถูกระงับถาวร</li>
-          <li>แอปพลิเคชันจะรายงานกรณีที่เกี่ยวข้องไปยังหน่วยงานบังคับใช้กฎหมายและองค์กรที่เกี่ยวข้อง เช่น NCMEC (National Center for Missing & Exploited Children) ตามที่กฎหมายกำหนด</li>
-          <li>ระบบมีการตรวจสอบเนื้อหา (Content Moderation) เพื่อป้องกันการเผยแพร่สื่อที่ไม่เหมาะสม</li>
-        </ul>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-1">
-          แอปพลิเคชันนี้ไม่อนุญาตให้ผู้ใช้งานที่มีอายุต่ำกว่า 13 ปีลงทะเบียนใช้งาน หากพบว่าผู้ใช้งานมีอายุต่ำกว่าเกณฑ์ บัญชีดังกล่าวจะถูกระงับทันที
-        </p>
+        </UL>
+        <P className="pt-1"><Strong>มาตรการของเรา:</Strong></P>
+        <UL>
+          <li>ใช้ระบบตรวจสอบเนื้อหาอัตโนมัติ (AI Vision) กับรูปภาพและวิดีโอที่อัปโหลดในพื้นที่สาธารณะ (โพสต์กิจกรรม, Reels, ร้านค้า, รูปโปรไฟล์)</li>
+          <li><Strong>ข้อจำกัด:</Strong> ปัจจุบันรูปภาพและไฟล์สื่อที่ส่งในแชทส่วนตัว (DM) และแชทกลุ่ม <Strong>ยังไม่ผ่านการตรวจ AI แบบอัตโนมัติ</Strong> เพื่อคุ้มครองความเป็นส่วนตัวของการสนทนา — เราอาศัย<Strong>ระบบรายงาน (Report) และบล็อก (Block)</Strong> จากผู้ใช้ พร้อมสิทธิเข้าถึงเนื้อหาโดยทีมงานเมื่อได้รับรายงานเกี่ยวกับ CSAE/CSAM หรือภัยคุกคามอื่นๆ เรากำลังพิจารณาขยาย AI moderation ไปยังการแชทในอนาคต</li>
+          <li>เนื้อหาที่ละเมิดจะถูกลบทันที และบัญชีผู้กระทำผิดจะถูกระงับถาวร</li>
+          <li>รายงานต่อหน่วยงานบังคับใช้กฎหมายและองค์กร เช่น NCMEC ตามที่กฎหมายกำหนด</li>
+          <li>ผู้ใช้สามารถรายงานผ่านระบบในแอปหรืออีเมล <Strong>levelon.app@gmail.com</Strong></li>
+        </UL>
       </>
     ),
   },
   {
-    title: "8. การเปลี่ยนแปลงนโยบาย",
+    title: "11. Cookies และเทคโนโลยีติดตาม",
     content: (
       <>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          แอปพลิเคชันอาจปรับปรุงนโยบายความเป็นส่วนตัวนี้เป็นระยะเพื่อให้สอดคล้องกับการเปลี่ยนแปลงของบริการและกฎหมายที่เกี่ยวข้อง:
-        </p>
-        <ul className="text-sm text-muted-foreground leading-relaxed list-disc list-inside space-y-1 pl-2">
-          <li>การเปลี่ยนแปลงจะมีผลทันทีเมื่อประกาศในแอปพลิเคชัน</li>
-          <li>การเปลี่ยนแปลงที่สำคัญจะมีการแจ้งเตือนผู้ใช้งานผ่านแอปพลิเคชัน</li>
-          <li>การใช้งานต่อหลังจากการเปลี่ยนแปลงถือว่าผู้ใช้งานยอมรับนโยบายฉบับปรับปรุงแล้ว</li>
-          <li>ผู้ใช้งานสามารถตรวจสอบวันที่อัปเดตล่าสุดได้ที่ด้านบนของหน้านี้</li>
-        </ul>
-        <p className="text-sm text-muted-foreground leading-relaxed pt-2">
-          หากผู้ใช้งานมีคำถามเกี่ยวกับนโยบายนี้ สามารถติดต่อแอปพลิเคชันได้ที่ <strong className="text-foreground">levelon.app@gmail.com</strong>
-        </p>
+        <P>เราใช้ Cookies, Local Storage และเทคโนโลยีที่คล้ายกันเพื่อ:</P>
+        <UL>
+          <li>รักษา Session การเข้าสู่ระบบ (จำเป็น ไม่สามารถปิดได้)</li>
+          <li>จดจำการตั้งค่า เช่น ภาษา, ธีม, จังหวัด</li>
+          <li>เก็บสถิติการใช้งานเชิงรวมเพื่อปรับปรุงบริการ</li>
+        </UL>
+        <P className="pt-1">
+          คุณสามารถปิด Cookies ได้ผ่านการตั้งค่าเบราว์เซอร์ แต่บางฟีเจอร์อาจไม่ทำงานตามปกติ
+        </P>
+      </>
+    ),
+  },
+  {
+    title: "12. การแจ้งเตือน (Push Notifications)",
+    content: (
+      <>
+        <UL>
+          <li>เราส่ง Push Notification เกี่ยวกับข้อความใหม่, การติดตาม, กิจกรรม, การอัปเดตระบบ และข้อมูลที่เกี่ยวข้องกับบัญชี</li>
+          <li>คุณสามารถปิดการแจ้งเตือนได้จากการตั้งค่าในแอปหรือระบบปฏิบัติการของอุปกรณ์</li>
+          <li>Device Token จะถูกลบเมื่อคุณออกจากระบบหรือลบบัญชี</li>
+        </UL>
+      </>
+    ),
+  },
+  {
+    title: "13. มาตรการรักษาความปลอดภัยของข้อมูล",
+    content: (
+      <>
+        <P>เราใช้มาตรการทางเทคนิคและองค์กรตามมาตรฐานอุตสาหกรรม:</P>
+        <UL>
+          <li><Strong>การเข้ารหัส:</Strong> ข้อมูลระหว่างส่ง (in transit) ผ่าน HTTPS/TLS และข้อมูลที่จัดเก็บ (at rest) ผ่านการเข้ารหัสของ Supabase</li>
+          <li><Strong>รหัสผ่าน:</Strong> จัดเก็บด้วยการแฮชแบบ salted โดย Supabase Auth ทีมงานไม่สามารถเห็นรหัสผ่านของคุณ</li>
+          <li><Strong>Row Level Security (RLS):</Strong> ระดับฐานข้อมูลควบคุมสิทธิเข้าถึงข้อมูลของผู้ใช้แต่ละราย</li>
+          <li><Strong>การควบคุมการเข้าถึง:</Strong> จำกัดสิทธิเข้าถึงของทีมงานตามหลัก Least Privilege</li>
+          <li><Strong>การตรวจจับพฤติกรรมผิดปกติ:</Strong> ระบบตรวจ Rate Limit, การป้องกัน bot และการตรวจจับการเข้าถึงที่ผิดปกติ</li>
+        </UL>
+        <P className="pt-2">
+          แม้จะใช้มาตรการที่เหมาะสม แต่ไม่มีระบบใดปลอดภัย 100% คุณควรรักษารหัสผ่าน ไม่แชร์บัญชี และเปิดใช้งานฟีเจอร์ความปลอดภัยเพิ่มเติม (หากมี)
+        </P>
+      </>
+    ),
+  },
+  {
+    title: "14. การแจ้งเหตุข้อมูลรั่วไหล (Data Breach Notification)",
+    content: (
+      <>
+        <P>
+          ในกรณีเกิดเหตุข้อมูลส่วนบุคคลรั่วไหลที่อาจก่อความเสี่ยงต่อสิทธิและเสรีภาพของเจ้าของข้อมูล เราจะ:
+        </P>
+        <UL>
+          <li>แจ้งต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลภายใน <Strong>72 ชั่วโมง</Strong> นับจากที่ทราบเหตุ ตามที่ PDPA กำหนด</li>
+          <li>แจ้งผู้ใช้งานที่ได้รับผลกระทบผ่านอีเมลหรือการแจ้งเตือนในแอป กรณีมีความเสี่ยงสูง</li>
+          <li>ดำเนินการแก้ไขและลดผลกระทบอย่างเร่งด่วน</li>
+        </UL>
+      </>
+    ),
+  },
+  {
+    title: "15. ข้อมูลสาธารณะและความรับผิดชอบของผู้ใช้",
+    content: (
+      <>
+        <P>
+          เนื้อหาที่คุณเผยแพร่แบบสาธารณะ (โปรไฟล์, Reels, กิจกรรมสาธารณะ, ร้านค้า, ความคิดเห็น) สามารถถูกเห็น ค้นหา คัดลอก หรือแชร์ต่อโดยผู้ใช้อื่นได้ แม้ภายหลังคุณจะลบไปแล้ว
+        </P>
+        <UL>
+          <li>อย่าเปิดเผยข้อมูลส่วนตัวที่ละเอียดอ่อน เช่น เลขบัตรประชาชน, ที่อยู่บ้าน, ข้อมูลการเงิน ในเนื้อหาสาธารณะ</li>
+          <li>ใช้ฟีเจอร์กิจกรรม "แบบส่วนตัว" หากไม่ต้องการให้คนทั่วไปเห็น</li>
+          <li>ใช้ฟีเจอร์บล็อก หรือรายงาน หากพบผู้ใช้ที่ไม่พึงประสงค์</li>
+        </UL>
+      </>
+    ),
+  },
+  {
+    title: "16. การตัดสินใจอัตโนมัติและ AI",
+    content: (
+      <>
+        <P>เราใช้ระบบ AI (Google Gemini) เพื่อ:</P>
+        <UL>
+          <li>ตรวจสอบเนื้อหารูปภาพ/วิดีโอ (Content Moderation) สำหรับโพสต์กิจกรรม, Reels และร้านค้า</li>
+          <li>จัดหมวดหมู่และแนะนำเนื้อหาบน Reels</li>
+        </UL>
+        <P className="pt-1">
+          หากเนื้อหาของคุณถูกระบบระงับโดยอัตโนมัติ คุณมีสิทธิร้องขอให้ทีมงานพิจารณาใหม่ (Human Review) โดยติดต่อ <Strong>levelon.app@gmail.com</Strong>
+        </P>
+      </>
+    ),
+  },
+  {
+    title: "17. การลบบัญชีและผลกระทบ",
+    content: (
+      <>
+        <P>เมื่อคุณลบบัญชี:</P>
+        <UL>
+          <li>โปรไฟล์, Reels, ความคิดเห็น, การไลก์, การติดตาม, ข้อความในแชทส่วนตัว, ร้านค้า และกิจกรรมของคุณจะถูกลบ</li>
+          <li>ข้อความในแชทกลุ่มอาจยังคงปรากฏต่อสมาชิกคนอื่น (โดยไม่แสดงตัวตนของคุณ) หากจำเป็นต่อบริบทของกลุ่ม</li>
+          <li>ข้อมูลการชำระเงิน, Log ระบบ, และข้อมูลที่กฎหมายกำหนดให้เก็บ จะถูกเก็บตามระยะเวลาที่ระบุในข้อ 7</li>
+          <li>ค่า EXP/Level และ Star Coin จะถูกลบพร้อมบัญชี ไม่สามารถกู้คืนได้</li>
+          <li>Level Coin ที่ยังไม่ได้ใช้จะถือเป็นการสละสิทธิ์ ไม่สามารถขอคืนเงินได้</li>
+        </UL>
+      </>
+    ),
+  },
+  {
+    title: "18. การเปลี่ยนแปลงนโยบาย",
+    content: (
+      <>
+        <UL>
+          <li>เราอาจปรับปรุงนโยบายฉบับนี้เป็นระยะเพื่อสะท้อนการเปลี่ยนแปลงของบริการหรือกฎหมาย</li>
+          <li>วันที่อัปเดตล่าสุดจะแสดงที่ด้านบนของหน้านี้เสมอ</li>
+          <li>การเปลี่ยนแปลงที่ส่งผลต่อสิทธิของคุณอย่างมีนัยสำคัญ เราจะแจ้งล่วงหน้าผ่านอีเมลหรือการแจ้งเตือนในแอป</li>
+          <li>การใช้งานต่อหลังจากการเปลี่ยนแปลงถือว่าคุณยอมรับนโยบายฉบับปรับปรุงแล้ว</li>
+        </UL>
+      </>
+    ),
+  },
+  {
+    title: "19. ช่องทางติดต่อ",
+    content: (
+      <>
+        <P>หากคุณมีคำถาม ข้อเสนอแนะ หรือต้องการใช้สิทธิของเจ้าของข้อมูล กรุณาติดต่อ:</P>
+        <UL>
+          <li>อีเมล: <Strong>levelon.app@gmail.com</Strong></li>
+          <li>ระบบ Help Center ในแอปพลิเคชัน</li>
+        </UL>
+        <P className="pt-2">
+          เราจะพยายามตอบกลับทุกคำร้องภายใน 30 วัน
+        </P>
       </>
     ),
   },
@@ -182,65 +384,48 @@ const ThaiPrivacySections = [
 
 const PrivacyPolicy = () => {
   const navigate = useNavigate();
-  const { language, t } = useLanguage();
-
-  const isThai = language === "th";
-
-  const translatedSections = [
-    { title: t("privacy.s1.title"), body: t("privacy.s1.body") },
-    { title: t("privacy.s2.title"), body: t("privacy.s2.body") },
-    { title: t("privacy.s3.title"), body: t("privacy.s3.body") },
-    { title: t("privacy.s4.title"), body: t("privacy.s4.body") },
-    { title: t("privacy.s5.title"), body: t("privacy.s5.body") },
-    { title: t("privacy.s6.title"), body: t("privacy.s6.body") },
-    { title: t("privacy.s7.title"), body: t("privacy.s7.body") },
-    { title: t("privacy.s8.title"), body: t("privacy.s8.body") },
-  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 bg-card border-b border-border">
-        <button onClick={() => navigate(-1)} className="p-2">
+        <button onClick={() => navigate(-1)} className="p-2" aria-label="ย้อนกลับ">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="font-semibold text-lg">{t("privacy.pageTitle")}</h1>
+        <h1 className="font-semibold text-lg">นโยบายความเป็นส่วนตัว</h1>
       </header>
 
       <main className="flex-1 px-4 py-4 overflow-y-auto pb-8 space-y-4">
         <div className="text-center space-y-1">
-          <h2 className="text-xl font-bold text-primary">{t("privacy.pageTitle")}</h2>
-          <p className="text-xs text-muted-foreground">{t("privacy.updatedAt")}</p>
+          <h2 className="text-xl font-bold text-primary">นโยบายความเป็นส่วนตัว</h2>
+          <p className="text-xs text-muted-foreground">อัปเดตล่าสุด: 6 กรกฎาคม 2569</p>
+          <p className="text-[11px] text-muted-foreground italic pt-1">
+            ฉบับภาษาไทยเป็นฉบับที่มีผลบังคับใช้ตามกฎหมายเพียงฉบับเดียว
+          </p>
+        </div>
+
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+          <p className="text-xs text-foreground leading-relaxed">
+            นโยบายฉบับนี้จัดทำขึ้นตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) โปรดอ่านอย่างละเอียดก่อนใช้งานบริการ
+          </p>
         </div>
 
         <div className="bg-card rounded-xl overflow-hidden divide-y divide-border">
-          {isThai
-            ? ThaiPrivacySections.map((section, i) => (
-                <details key={i} className="group">
-                  <summary className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/50 transition-colors list-none">
-                    <span className="flex-1 font-semibold text-base text-primary">{section.title}</span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-90 shrink-0" />
-                  </summary>
-                  <div className="px-4 py-3 bg-muted/30 space-y-1">
-                    {section.content}
-                  </div>
-                </details>
-              ))
-            : translatedSections.map((section, i) => (
-                <details key={i} className="group">
-                  <summary className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/50 transition-colors list-none">
-                    <span className="flex-1 font-semibold text-base text-primary">{section.title}</span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-90 shrink-0" />
-                  </summary>
-                  <div className="px-4 py-3 bg-muted/30">
-                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{section.body}</p>
-                  </div>
-                </details>
-              ))}
+          {ThaiPrivacySections.map((section, i) => (
+            <details key={i} className="group">
+              <summary className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/50 transition-colors list-none">
+                <span className="flex-1 font-semibold text-sm text-primary">{section.title}</span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-90 shrink-0" />
+              </summary>
+              <div className="px-4 py-3 bg-muted/30 space-y-2">
+                {section.content}
+              </div>
+            </details>
+          ))}
         </div>
 
         <div className="text-center text-xs text-muted-foreground pt-4 pb-2 space-y-1">
-          <p>{t("privacy.copyright")}</p>
-          <p>{t("privacy.copyrightNote")}</p>
+          <p>© Levelon. สงวนลิขสิทธิ์.</p>
+          <p>เอกสารนี้มีผลบังคับใช้กับผู้ใช้งานทุกคน</p>
         </div>
       </main>
     </div>

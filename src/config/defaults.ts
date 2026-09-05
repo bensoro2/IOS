@@ -32,6 +32,8 @@ export const SEARCH_DEBOUNCE_MS = 400;
 export const SUGGESTION_BLUR_DELAY_MS = 150;
 export const CHAT_POLL_INTERVAL_MS = 3000;
 export const CHAT_POLL_MAX_MS = 15000;
+// Heartbeat used while the realtime channel is healthy (polling is only a safety net)
+export const CHAT_POLL_REALTIME_MS = 30000;
 export const SCROLL_TO_BOTTOM_DELAY_MS = 100;
 export const AUTH_TIMEOUT_MS = 10000;
 export const LONG_PRESS_MS = 500;

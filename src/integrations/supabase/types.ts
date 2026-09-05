@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -62,29 +62,58 @@ export type Database = {
       activity_categories: {
         Row: {
           created_at: string
+          emoji: string | null
           icon: string | null
           id: string
           key: string
           label_en: string | null
+          label_ja: string | null
+          label_ko: string | null
+          label_ru: string | null
           label_th: string
+          label_zh: string | null
+          parent_key: string | null
+          sort_order: number
         }
         Insert: {
           created_at?: string
+          emoji?: string | null
           icon?: string | null
           id?: string
           key: string
           label_en?: string | null
+          label_ja?: string | null
+          label_ko?: string | null
+          label_ru?: string | null
           label_th: string
+          label_zh?: string | null
+          parent_key?: string | null
+          sort_order?: number
         }
         Update: {
           created_at?: string
+          emoji?: string | null
           icon?: string | null
           id?: string
           key?: string
           label_en?: string | null
+          label_ja?: string | null
+          label_ko?: string | null
+          label_ru?: string | null
           label_th?: string
+          label_zh?: string | null
+          parent_key?: string | null
+          sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "activity_categories_parent_key_fkey"
+            columns: ["parent_key"]
+            isOneToOne: false
+            referencedRelation: "activity_categories"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       activity_checkins: {
         Row: {
@@ -323,6 +352,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      duo_cooldowns: {
+        Row: {
+          available_at: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          available_at: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          available_at?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      duo_pairs: {
+        Row: {
+          created_at: string
+          id: string
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: []
+      }
+      duo_requests: {
+        Row: {
+          created_at: string
+          from_user: string
+          id: string
+          responded_at: string | null
+          status: string
+          to_user: string
+        }
+        Insert: {
+          created_at?: string
+          from_user: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+          to_user: string
+        }
+        Update: {
+          created_at?: string
+          from_user?: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+          to_user?: string
+        }
+        Relationships: []
       }
       fast_checkins: {
         Row: {
@@ -629,6 +724,30 @@ export type Database = {
           },
         ]
       }
+      notification_mutes: {
+        Row: {
+          chat_id: string
+          chat_type: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          chat_type: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          chat_type?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string
@@ -711,6 +830,7 @@ export type Database = {
       }
       promo_codes: {
         Row: {
+          check_plus_points: number | null
           code: string
           created_at: string
           current_uses: number
@@ -720,8 +840,10 @@ export type Database = {
           max_uses: number | null
           plan_type: string
           premium_days: number
+          star_coins_amount: number | null
         }
         Insert: {
+          check_plus_points?: number | null
           code: string
           created_at?: string
           current_uses?: number
@@ -731,8 +853,10 @@ export type Database = {
           max_uses?: number | null
           plan_type?: string
           premium_days?: number
+          star_coins_amount?: number | null
         }
         Update: {
+          check_plus_points?: number | null
           code?: string
           created_at?: string
           current_uses?: number
@@ -742,6 +866,7 @@ export type Database = {
           max_uses?: number | null
           plan_type?: string
           premium_days?: number
+          star_coins_amount?: number | null
         }
         Relationships: []
       }
@@ -1003,6 +1128,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_history: {
+        Row: {
+          created_at: string
+          days_added: number
+          duration: string | null
+          id: string
+          plan_type: string
+          premium_until_after: string | null
+          price: number | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_added: number
+          duration?: string | null
+          id?: string
+          plan_type: string
+          premium_until_after?: string | null
+          price?: number | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_added?: number
+          duration?: string | null
+          id?: string
+          plan_type?: string
+          premium_until_after?: string | null
+          price?: number | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_code_redemptions: {
         Row: {
           code_owner_id: string
@@ -1132,8 +1293,10 @@ export type Database = {
           last_login: string | null
           phone: string | null
           role: string | null
+          star_coins: number
           status: string | null
           theme: string | null
+          theme_custom: Json | null
           user_code: string | null
           user_code_use_count: number
         }
@@ -1151,8 +1314,10 @@ export type Database = {
           last_login?: string | null
           phone?: string | null
           role?: string | null
+          star_coins?: number
           status?: string | null
           theme?: string | null
+          theme_custom?: Json | null
           user_code?: string | null
           user_code_use_count?: number
         }
@@ -1170,8 +1335,10 @@ export type Database = {
           last_login?: string | null
           phone?: string | null
           role?: string | null
+          star_coins?: number
           status?: string | null
           theme?: string | null
+          theme_custom?: Json | null
           user_code?: string | null
           user_code_use_count?: number
         }
@@ -1186,7 +1353,35 @@ export type Database = {
         Args: { user1: string; user2: string }
         Returns: boolean
       }
+      cancel_duo: { Args: never; Returns: Json }
+      cancel_duo_request: { Args: { _request_id: string }; Returns: Json }
+      delete_follow_notification: {
+        Args: { p_actor_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      delete_my_account: { Args: never; Returns: Json }
       generate_user_code: { Args: never; Returns: string }
+      get_duo_partner: { Args: { _user_id: string }; Returns: string }
+      get_duo_status: { Args: { _other: string }; Returns: Json }
+      get_group_chat_previews: {
+        Args: { _ids: string[] }
+        Returns: {
+          content: string
+          created_at: string
+          group_chat_id: string
+          media_type: string
+          member_count: number
+        }[]
+      }
+      get_my_contact_info: {
+        Args: never
+        Returns: {
+          birthday: string
+          email: string
+          phone: string
+        }[]
+      }
+      has_active_duo: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1195,14 +1390,6 @@ export type Database = {
         Returns: boolean
       }
       increment_reel_views: { Args: { _reel_id: string }; Returns: undefined }
-      upsert_follow_notification: {
-        Args: { p_user_id: string; p_actor_id: string }
-        Returns: undefined
-      }
-      delete_follow_notification: {
-        Args: { p_user_id: string; p_actor_id: string }
-        Returns: undefined
-      }
       is_blocked: {
         Args: { blocked: string; blocker: string }
         Returns: boolean
@@ -1215,11 +1402,31 @@ export type Database = {
         Args: { _group_chat_id: string; _user_id: string }
         Returns: boolean
       }
+      perform_activity_checkin: {
+        Args: { _group_chat_id: string }
+        Returns: Json
+      }
+      perform_check_plus_checkin: { Args: { _category: string }; Returns: Json }
+      perform_fast_checkin: { Args: { _category: string }; Returns: Json }
+      redeem_promo_code: { Args: { p_code: string }; Returns: Json }
+      redeem_subscription_with_coins: {
+        Args: { _currency: string; _duration: string; _plan: string }
+        Returns: Json
+      }
       redeem_user_code: { Args: { p_code: string }; Returns: Json }
       reset_all_checkins: { Args: never; Returns: undefined }
+      respond_duo_request: {
+        Args: { _accept: boolean; _request_id: string }
+        Returns: Json
+      }
+      send_duo_request: { Args: { _target: string }; Returns: Json }
       spend_hope_coins_on_funding: {
         Args: { _amount: number; _direction: string }
         Returns: Json
+      }
+      upsert_follow_notification: {
+        Args: { p_actor_id: string; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {

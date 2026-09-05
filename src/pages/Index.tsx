@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+
+const PAGE_SIZE = 6;
 import { BottomNav } from "@/components/BottomNav";
 import { useNavigate } from "react-router-dom";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -6,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProvinceSelector } from "@/components/ProvinceSelector";
 import { CreateActivityDialog } from "@/components/CreateActivityDialog";
 import { ActivityCard } from "@/components/ActivityCard";
-import { ActivitySearchSelector } from "@/components/ActivitySearchSelector";
+import { CategoryPickerDialog } from "@/components/CategoryPickerDialog";
+import { UserSearchBar } from "@/components/UserSearchBar";
 import JoinRequestsDialog from "@/components/JoinRequestsDialog";
 import PullToRefresh from "@/components/PullToRefresh";
 import { toast } from "sonner";
@@ -16,15 +19,29 @@ import {
   Plus,
   Sparkles,
   Loader2,
-  UserPlus
+  UserPlus,
+  AlertTriangle,
+  X
 } from "lucide-react";
 import { calculateLevel } from "@/utils/levelSystem";
+import { normalizeSubCategoryId } from "@/constants/activityCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getSelectedCountryCode, getDefaultProvince } from "@/constants/countryProvinces";
+import { starCoinDataUrl } from "@/assets/starCoin";
+import { levelCoinImg } from "@/assets/levelCoin";
+
+// วันที่ตามเวลาไทย (Asia/Bangkok) รูปแบบ YYYY-MM-DD
+const getBangkokDateKey = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
+
+const SAFETY_WARNING_KEY = "safety_warning_dismissed_date";
 
 const Index = () => {
   const { t } = useLanguage();
   const swipe = useSwipeNavigation({ left: "/messages" }); // Reels ปิดชั่วคราว → ไป Messages แทน
+  const [showSafetyWarning, setShowSafetyWarning] = useState(
+    () => localStorage.getItem(SAFETY_WARNING_KEY) !== getBangkokDateKey()
+  );
   const [user, setUser] = useState<any>(null);
   const countryCode = getSelectedCountryCode();
   const savedProvince = localStorage.getItem("selected_province");
@@ -34,6 +51,12 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<any[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
   const [joinedGroupIds, setJoinedGroupIds] = useState<Set<string>>(new Set());
   const [joiningActivityId, setJoiningActivityId] = useState<string | null>(null);
    const [kickedActivityIds, setKickedActivityIds] = useState<Set<string>>(new Set());
@@ -43,7 +66,35 @@ const Index = () => {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
    const [authorProfiles, setAuthorProfiles] = useState<Record<string, { display_name: string | null; avatar_url: string | null }>>({});
   const [authorCategoryLevels, setAuthorCategoryLevels] = useState<Record<string, number>>({});
+  const [starCoins, setStarCoins] = useState<number>(0);
+  const [levelCoins, setLevelCoins] = useState<number>(0);
+
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchStars = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await (supabase as any)
+        .from("users")
+        .select("star_coins, hope_coins")
+        .eq("id", user.id)
+        .maybeSingle();
+      setStarCoins((data as any)?.star_coins ?? 0);
+      setLevelCoins((data as any)?.hope_coins ?? 0);
+    };
+    fetchStars();
+    window.addEventListener("star-coins-updated", fetchStars);
+    const channel = supabase
+      .channel("header-star-coins")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "users" }, fetchStars)
+      .subscribe();
+    return () => {
+      window.removeEventListener("star-coins-updated", fetchStars);
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -66,69 +117,120 @@ const Index = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const enrichAuthors = async (rows: any[]) => {
+    const userIds = [...new Set(rows.map(a => a.user_id).filter(Boolean))] as string[];
+    if (userIds.length === 0) return;
+    // Only fetch users not already cached
+    const missingIds = userIds.filter(id => !authorProfiles[id]);
+    const [{ data: users }, { data: actCheckins }, { data: fastCheckins }] = await Promise.all([
+      missingIds.length > 0
+        ? supabase.from("users").select("id, display_name, avatar_url").in("id", missingIds)
+        : Promise.resolve({ data: [] as any[] }),
+      supabase.from("activity_checkins").select("user_id, category").in("user_id", userIds),
+      supabase.from("fast_checkins").select("user_id, category").in("user_id", userIds),
+    ]);
+
+    const categoryCheckinCounts: Record<string, number> = {};
+    [...(actCheckins || []), ...(fastCheckins || [])].forEach((c: any) => {
+      if (c.category) {
+        const cat = normalizeSubCategoryId(c.category);
+        const key = `${c.user_id}:${cat}`;
+        categoryCheckinCounts[key] = (categoryCheckinCounts[key] || 0) + 1;
+      }
+    });
+
+    const levels: Record<string, number> = {};
+    Object.entries(categoryCheckinCounts).forEach(([key, count]) => {
+      levels[key] = calculateLevel(count);
+    });
+    setAuthorCategoryLevels(prev => ({ ...prev, ...levels }));
+
+    if ((users || []).length > 0) {
+      setAuthorProfiles(prev => {
+        const next = { ...prev };
+        (users || []).forEach((u: any) => {
+          next[u.id] = { display_name: u.display_name, avatar_url: u.avatar_url };
+        });
+        return next;
+      });
+    }
+  };
+
   const fetchActivities = async (province: string, category?: string) => {
-    // If no province selected, don't fetch (avoids showing all countries' posts)
     if (!province) {
       setActivities([]);
       setActivitiesLoading(false);
+      setHasMore(false);
+      hasMoreRef.current = false;
       return;
     }
     setActivitiesLoading(true);
+    setHasMore(true);
+    hasMoreRef.current = true;
     try {
-      let query = supabase
-        .from("activities")
-        .select("*")
-        .eq("province", province);
-      
-      if (category) {
-        query = query.eq("category", category);
-      }
-      
-      const { data, error } = await query.order("created_at", { ascending: false });
+      let query = supabase.from("activities").select("*").eq("province", province);
+      if (category) query = query.eq("category", category);
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .range(0, PAGE_SIZE - 1);
 
       if (error) throw error;
-      setActivities(data || []);
-
-      // Fetch author profiles for all unique user_ids
-      const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))] as string[];
-      if (userIds.length > 0) {
-        const [{ data: users }, { data: actCheckins }, { data: fastCheckins }] = await Promise.all([
-          supabase.from("users").select("id, display_name, avatar_url").in("id", userIds),
-          supabase.from("activity_checkins").select("user_id, category").in("user_id", userIds),
-          supabase.from("fast_checkins").select("user_id, category").in("user_id", userIds),
-        ]);
-
-        // Count check-ins per user+category to match Profile page logic
-        const categoryCheckinCounts: Record<string, number> = {};
-        [...(actCheckins || []), ...(fastCheckins || [])].forEach((c: any) => {
-          if (c.category) {
-            const key = `${c.user_id}:${c.category}`;
-            categoryCheckinCounts[key] = (categoryCheckinCounts[key] || 0) + 1;
-          }
-        });
-
-        // Convert counts to levels
-        const levels: Record<string, number> = {};
-        Object.entries(categoryCheckinCounts).forEach(([key, count]) => {
-          levels[key] = calculateLevel(count);
-        });
-        setAuthorCategoryLevels(levels);
-
-        const profiles: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
-        (users || []).forEach(u => {
-          profiles[u.id] = {
-            display_name: u.display_name,
-            avatar_url: u.avatar_url,
-          };
-        });
-        setAuthorProfiles(profiles);
-      }
+      const rows = data || [];
+      setActivities(rows);
+      const more = rows.length === PAGE_SIZE;
+      setHasMore(more);
+      hasMoreRef.current = more;
+      await enrichAuthors(rows);
     } catch (error) {
       console.error("Error fetching activities:", error);
     } finally {
       setActivitiesLoading(false);
     }
   };
+
+  const loadMoreActivities = useCallback(async () => {
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    if (!selectedProvince) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const from = activities.length;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase.from("activities").select("*").eq("province", selectedProvince);
+      if (selectedCategory) query = query.eq("category", selectedCategory);
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (error) throw error;
+      const rows = data || [];
+      if (rows.length > 0) {
+        setActivities(prev => {
+          const seen = new Set(prev.map(a => a.id));
+          const merged = [...prev];
+          rows.forEach(r => { if (!seen.has(r.id)) merged.push(r); });
+          return merged;
+        });
+        await enrichAuthors(rows);
+      }
+      const more = rows.length === PAGE_SIZE;
+      setHasMore(more);
+      hasMoreRef.current = more;
+    } catch (e) {
+      console.error("Error loading more activities:", e);
+    } finally {
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
+    }
+  }, [activities.length, selectedProvince, selectedCategory]);
+
+  const handleFeedScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    const el = event.currentTarget;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom <= 700) {
+      loadMoreActivities();
+    }
+  }, [loadMoreActivities]);
+
 
    const fetchIncomingRequests = async (userId: string) => {
      try {
@@ -359,8 +461,6 @@ const Index = () => {
       }
     });
 
-    fetchActivities(selectedProvince, selectedCategory);
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -368,6 +468,19 @@ const Index = () => {
   useEffect(() => {
     fetchActivities(selectedProvince, selectedCategory);
   }, [selectedProvince, selectedCategory]);
+
+  // Infinite scroll — prefetch next page when sentinel appears
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadMoreActivities();
+      }
+    }, { root: scrollContainerRef.current, rootMargin: "600px 0px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMoreActivities, activities.length, hasMore]);
 
   // Realtime badge — อัปเดตเลขแจ้งเตือน join request แบบ real-time
   useEffect(() => {
@@ -403,10 +516,27 @@ const Index = () => {
   return (
     <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden" {...swipe}>
       {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-card" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
-        <ProvinceSelector 
-          selectedProvince={selectedProvince} 
-          onSelect={(p) => { setSelectedProvince(p); localStorage.setItem("selected_province", p); }} 
+      <header className="relative flex-shrink-0 flex items-center justify-between px-4 py-3 bg-card" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
+        {/* Star Coin badge — centered */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2" style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) / 2)' }}>
+          <button
+            onClick={() => navigate("/star-coins")}
+            className="flex items-center gap-1 active:scale-95 transition-transform"
+          >
+            <img src={starCoinDataUrl} alt="Star Coin" className="w-5 h-5" />
+            <span className="text-sm font-bold text-amber-500">{starCoins.toLocaleString()}</span>
+          </button>
+          <button
+            onClick={() => navigate("/hope-coins")}
+            className="flex items-center gap-1 active:scale-95 transition-transform"
+          >
+            <img src={levelCoinImg} alt="Level Coin" className="w-5 h-5" />
+            <span className="text-sm font-bold text-primary">{levelCoins.toLocaleString()}</span>
+          </button>
+        </div>
+        <ProvinceSelector
+          selectedProvince={selectedProvince}
+          onSelect={(p) => { setSelectedProvince(p); localStorage.setItem("selected_province", p); }}
         />
         <div className="flex items-center gap-2">
            <button
@@ -439,6 +569,8 @@ const Index = () => {
 
       {/* Main Content */}
       <PullToRefresh
+        ref={scrollContainerRef}
+        onScroll={handleFeedScroll}
         onRefresh={async () => {
           if (!user?.id) return;
           await Promise.all([
@@ -451,21 +583,51 @@ const Index = () => {
         className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        {/* Search Bar */}
-        <ActivitySearchSelector
-          value={selectedCategory}
-          onValueChange={setSelectedCategory}
-        />
+        {/* Safety Warning */}
+        {showSafetyWarning && (
+          <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1 text-sm text-amber-800 dark:text-amber-300">
+              <p className="font-semibold">{t("home.safetyWarningTitle")}</p>
+              <p className="leading-snug mt-0.5">{t("home.safetyWarningBody")}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem(SAFETY_WARNING_KEY, getBangkokDateKey());
+                setShowSafetyWarning(false);
+              }}
+              aria-label={t("common.close")}
+              className="shrink-0 text-amber-600 dark:text-amber-400 hover:opacity-70 transition-opacity"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* User Search Bar */}
+        <UserSearchBar />
 
         {/* Create Activity Post Button */}
         <CreateActivityDialog selectedProvince={selectedProvince} onActivityCreated={() => fetchActivities(selectedProvince, selectedCategory)} />
 
         {/* Nearby Activities Section */}
         <div className="space-y-3 pb-24">
-         <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              <h2 className="font-semibold text-lg">{t("home.nearbyActivities")}</h2>
-            </div>
+          <CategoryPickerDialog
+            value={selectedCategory}
+            onValueChange={(v) => setSelectedCategory(v)}
+            trigger={
+              <button
+                type="button"
+                className="flex items-center gap-2 w-full text-left active:opacity-70 transition-opacity"
+              >
+                <Sparkles className="w-5 h-5" />
+                <h2 className="font-semibold text-lg">{t("home.selectActivity")}</h2>
+              </button>
+            }
+          />
+
+
 
           {activitiesLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -518,6 +680,12 @@ const Index = () => {
                   onDelete={() => fetchActivities(selectedProvince, selectedCategory)}
                 />
               ))}
+              {hasMore && <div ref={sentinelRef} className="h-1" />}
+              {loadingMore && (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
             </div>
           )}
         </div>

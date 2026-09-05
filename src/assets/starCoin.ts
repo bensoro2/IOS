@@ -1,0 +1,3 @@
+// Iconic upside-down 5-point star — Levelon's signature Star Coin mark. Solid yellow, no outline.
+export const starCoinDataUrl =
+  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cG9seWdvbiBwb2ludHM9IjUwLDk1IDM4LjUsNTkuNiAyLjQsNTkuNiAzMS42LDM3LjcgMjAuNiwyLjUgNTAsMjQuMiA3OS40LDIuNSA2OC40LDM3LjcgOTcuNiw1OS42IDYxLjUsNTkuNiIgZmlsbD0iI2ZhY2MxNSIvPjwvc3ZnPg==";

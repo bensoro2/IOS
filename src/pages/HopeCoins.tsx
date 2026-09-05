@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Minus, Plus } from "lucide-react";
-import levelCoinImg from "@/assets/level-coin.png";
+import { levelCoinImg } from "@/assets/levelCoin";
 import { COIN_PACKAGES, CoinPackage } from "@/config/hopeCoinPackages";
 import {
   Dialog,
@@ -151,13 +151,8 @@ const HopeCoins = () => {
               key={pkg.coins}
               onClick={() => openPurchaseDialog(pkg)}
               disabled={buyingPackage !== null}
-              className="relative flex flex-col items-center gap-1 p-4 rounded-xl border border-border bg-card hover:border-primary/50 active:scale-[0.97] transition-all disabled:opacity-50"
+              className="flex flex-col items-center gap-1 p-4 rounded-xl border border-border bg-card hover:border-primary/50 active:scale-[0.97] transition-all disabled:opacity-50"
             >
-              {pkg.bonus && (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  -{pkg.bonus}
-                </span>
-              )}
               <img src={levelCoinImg} alt="Level Coin" className="w-10 h-10" />
               <span className="font-bold text-foreground">{pkg.label} coin</span>
               <span className="text-xs text-muted-foreground">

@@ -11,7 +11,7 @@ import { MoreVertical, Ban, UserX } from "lucide-react";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageBubble from "@/components/chat/MessageBubble";
 import ImageLightbox from "@/components/chat/ImageLightbox";
-import { BUCKET_CHAT_MEDIA, CHAT_POLL_INTERVAL_MS, CHAT_POLL_MAX_MS, SCROLL_TO_BOTTOM_DELAY_MS } from "@/config/defaults";
+import { BUCKET_CHAT_MEDIA, CHAT_POLL_INTERVAL_MS, CHAT_POLL_MAX_MS, CHAT_POLL_REALTIME_MS, MESSAGES_LOAD_LIMIT, SCROLL_TO_BOTTOM_DELAY_MS } from "@/config/defaults";
  import {
    DropdownMenu,
    DropdownMenuContent,
@@ -198,6 +198,8 @@ const DirectChat = () => {
     let isActive = true;
     let pollTimeoutId: ReturnType<typeof setTimeout>;
     let pollInterval = CHAT_POLL_INTERVAL_MS;
+    let realtimeOk = false;
+    const nextDelay = () => (realtimeOk ? CHAT_POLL_REALTIME_MS : pollInterval);
 
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -239,6 +241,10 @@ const DirectChat = () => {
     const startPolling = (uid: string, otherUid: string) => {
       const poll = async () => {
         if (!isActive) return;
+        if (typeof document !== "undefined" && document.hidden) {
+          pollTimeoutId = setTimeout(poll, CHAT_POLL_REALTIME_MS);
+          return;
+        }
         try {
           const { data } = await supabase
             .from("direct_messages")
@@ -301,9 +307,9 @@ const DirectChat = () => {
           console.error("DM poll error:", err);
           pollInterval = Math.min(pollInterval * 1.5, CHAT_POLL_MAX_MS);
         }
-        if (isActive) pollTimeoutId = setTimeout(poll, pollInterval);
+        if (isActive) pollTimeoutId = setTimeout(poll, nextDelay());
       };
-      pollTimeoutId = setTimeout(poll, pollInterval);
+      pollTimeoutId = setTimeout(poll, nextDelay());
     };
 
     // INSERT subscription (ไม่ต้องรู้ currentUid)
@@ -329,7 +335,10 @@ const DirectChat = () => {
         },
         (payload) => { pollInterval = CHAT_POLL_INTERVAL_MS; handleNewDm(payload, currentUid); }
       )
-      .subscribe();
+      .subscribe((status) => {
+        realtimeOk = status === "SUBSCRIBED";
+        if (!realtimeOk) pollInterval = CHAT_POLL_INTERVAL_MS;
+      });
 
     let readChannel: ReturnType<typeof supabase.channel> | null = null;
 
@@ -458,12 +467,14 @@ const DirectChat = () => {
         .from("direct_messages")
         .select("*")
         .or(`and(sender_id.eq.${currentUid},receiver_id.eq.${otherUid}),and(sender_id.eq.${otherUid},receiver_id.eq.${currentUid})`)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(MESSAGES_LOAD_LIMIT);
 
       if (error) throw error;
+      const rows = (data || []).slice().reverse();
 
       // Fetch user info for both participants in one batch instead of per-message
-      const userIds = [...new Set((data || []).map(m => m.sender_id))];
+      const userIds = [...new Set(rows.map(m => m.sender_id))];
       const { data: usersData } = await supabase
         .from("users")
         .select("id, display_name, avatar_url")
@@ -474,7 +485,7 @@ const DirectChat = () => {
       );
       (usersData || []).forEach(u => userCacheRef.current.set(u.id, u));
 
-      const enrichedMessages: Message[] = (data || []).map(msg => {
+      const enrichedMessages: Message[] = rows.map(msg => {
         const userData = userMap.get(msg.sender_id);
         return {
           id: msg.id,

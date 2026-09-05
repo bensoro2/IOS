@@ -7,12 +7,13 @@ interface PullToRefreshProps {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  onScroll?: React.UIEventHandler<HTMLDivElement>;
 }
 
 const PULL_THRESHOLD = 70;
 
 const PullToRefresh = forwardRef<HTMLDivElement, PullToRefreshProps>(
-  ({ onRefresh, children, className, style }, forwardedRef) => {
+  ({ onRefresh, children, className, style, onScroll }, forwardedRef) => {
     const [pullY, setPullY] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const startYRef = useRef(0);
@@ -73,6 +74,7 @@ const PullToRefresh = forwardRef<HTMLDivElement, PullToRefreshProps>(
         ref={setRefs}
         className={className}
         style={style}
+        onScroll={onScroll}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

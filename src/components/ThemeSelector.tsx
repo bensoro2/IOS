@@ -1,5 +1,5 @@
 import { useTheme, ThemeName } from "@/contexts/ThemeContext";
-import { Palette, ChevronRight, Check } from "lucide-react";
+import { Palette, ChevronRight, Check, Lock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import { toast } from "sonner";
+import CustomThemeDialog from "@/components/CustomThemeDialog";
  
 interface ThemeOption {
   id: ThemeName;
@@ -41,14 +44,34 @@ const themes: ThemeOption[] = [
     colors: { bg: "hsl(340 30% 80%)", accent: "hsl(340 75% 55%)" },
     requiresPremium: true,
   },
+  {
+    id: "violet-white",
+    name: "Violet Noir",
+    colors: { bg: "hsl(270 60% 10%)", accent: "hsl(0 0% 100%)" },
+    requiresPremium: true,
+  },
+  {
+    id: "red-pink",
+    name: "Ruby Night",
+    colors: { bg: "hsl(340 60% 10%)", accent: "hsl(340 80% 90%)" },
+    requiresPremium: true,
+  },
+  {
+    id: "blue-yellow",
+    name: "Midnight Blue",
+    colors: { bg: "hsl(220 70% 20%)", accent: "hsl(48 100% 55%)" },
+    requiresPremium: true,
+  },
 ];
  
 const ThemeSelector = () => {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
   const { t } = useLanguage();
+  const { hasThemes } = usePremiumStatus();
 
-  const currentTheme = themes.find((t) => t.id === theme);
+  const currentTheme = theme === "custom" ? { name: "Custom" } : themes.find((t) => t.id === theme);
  
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -74,17 +97,18 @@ const ThemeSelector = () => {
 
         <div className="grid grid-cols-3 gap-3 mt-2">
           {themes.map((themeOption) => {
-            const isLocked = false;
+            const isLocked = !!themeOption.requiresPremium && !hasThemes;
             return (
               <button
                 key={themeOption.id}
                 onClick={() => {
-                  if (!isLocked) {
-                    setTheme(themeOption.id);
-                    setOpen(false);
+                  if (isLocked) {
+                    toast.error(t("theme.premiumRequired") || "ต้องสมัคร Gold Plan เพื่อใช้ธีมนี้");
+                    return;
                   }
+                  setTheme(themeOption.id);
+                  setOpen(false);
                 }}
-                disabled={isLocked}
                 className={cn(
                   "relative flex flex-col items-center justify-end rounded-xl h-28 overflow-hidden transition-all",
                   theme === themeOption.id && "ring-2 ring-primary ring-offset-2 ring-offset-background",
@@ -128,8 +152,31 @@ const ThemeSelector = () => {
           >
             Standard
           </button>
+
+          <button
+            onClick={() => {
+              if (!hasThemes) {
+                toast.error(t("theme.premiumRequired") || "ต้องสมัคร Gold Plan เพื่อใช้ธีมนี้");
+                return;
+              }
+              setCustomOpen(true);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border border-primary/40 text-primary hover:bg-primary/10 transition-colors",
+              theme === "custom" && "bg-primary/10"
+            )}
+          >
+            {!hasThemes ? <Lock className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+            Custom
+          </button>
         </div>
       </DialogContent>
+
+      <CustomThemeDialog
+        open={customOpen}
+        onOpenChange={setCustomOpen}
+        onSaved={() => setOpen(false)}
+      />
     </Dialog>
   );
 };

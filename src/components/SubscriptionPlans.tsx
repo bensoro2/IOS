@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Crown, Check, Lock, Zap, ChevronRight, Loader2, Settings, QrCode } from "lucide-react";
+import { Crown, Check, Lock, Zap, ChevronRight, Loader2, Settings, History as HistoryIcon } from "lucide-react";
+import SubscriptionHistory from "@/components/SubscriptionHistory";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,18 +15,17 @@ import { format } from "date-fns";
 import { getDateLocale } from "@/lib/dateLocale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SUBSCRIPTION_PRICES } from "@/config/subscription";
+import { LEVEL_COIN_PRICES, STAR_COIN_PRICES, PlanId, Duration, Currency } from "@/config/subscription";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-type Duration = "1month" | "3months" | "6months";
-type PaymentMethod = "promptpay";
+import { useNavigate } from "react-router-dom";
+import { levelCoinImg } from "@/assets/levelCoin";
+import { starCoinDataUrl } from "@/assets/starCoin";
 
 interface PlanConfig {
-  id: PlanType;
+  id: PlanId;
   name: string;
   icon: React.ReactNode;
   featureKeys: string[];
-  prices: Record<Duration, number>;
   color: string;
   gradient: string;
 }
@@ -36,11 +36,6 @@ const plans: PlanConfig[] = [
     name: "Pro Plan",
     icon: <Zap className="w-5 h-5" />,
     featureKeys: ["sub.privatePost", "sub.fastCheckin"],
-    prices: {
-      "1month": SUBSCRIPTION_PRICES.pro.monthly,
-      "3months": SUBSCRIPTION_PRICES.pro.quarterly,
-      "6months": SUBSCRIPTION_PRICES.pro.halfyearly,
-    },
     color: "text-blue-500",
     gradient: "from-blue-500 to-cyan-500",
   },
@@ -49,28 +44,49 @@ const plans: PlanConfig[] = [
     name: "Gold Plan",
     icon: <Crown className="w-5 h-5" />,
     featureKeys: ["sub.privatePost", "sub.fastCheckin", "sub.themes"],
-    prices: {
-      "1month": SUBSCRIPTION_PRICES.gold.monthly,
-      "3months": SUBSCRIPTION_PRICES.gold.quarterly,
-      "6months": SUBSCRIPTION_PRICES.gold.halfyearly,
-    },
     color: "text-amber-500",
     gradient: "from-amber-500 to-orange-500",
   },
 ];
 
 interface SubscriptionPlansProps {
-  onSubscribe?: (plan: PlanType, duration: Duration) => void;
+  onSubscribe?: (plan: PlanId, duration: Duration) => void;
 }
 
 const SubscriptionPlansContent = ({ onSubscribe }: SubscriptionPlansProps) => {
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>("pro");
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>("pro");
   const [selectedDuration, setSelectedDuration] = useState<Duration>("1month");
-  const [selectedPayment] = useState<PaymentMethod>("promptpay");
+  const [currency, setCurrency] = useState<Currency>("level");
   const [isLoading, setIsLoading] = useState(false);
+  const [levelBalance, setLevelBalance] = useState(0);
+  const [starBalance, setStarBalance] = useState(0);
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
-  const currentPlan = plans.find((p) => p.id === selectedPlan);
+  const fetchBalances = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("users")
+      .select("hope_coins, star_coins")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (data) {
+      setLevelBalance(Number(data.hope_coins) || 0);
+      setStarBalance(Number(data.star_coins) || 0);
+    }
+  };
+
+  useEffect(() => {
+    fetchBalances();
+  }, []);
+
+  const currentPlan = plans.find((p) => p.id === selectedPlan)!;
+  const price = currency === "level"
+    ? LEVEL_COIN_PRICES[selectedPlan][selectedDuration]
+    : STAR_COIN_PRICES[selectedPlan][selectedDuration];
+  const balance = currency === "level" ? levelBalance : starBalance;
+  const insufficient = balance < price;
 
   const durationOptions: { id: Duration; labelKey: string; discountKey?: string }[] = [
     { id: "1month", labelKey: "sub.1month" },
@@ -78,23 +94,31 @@ const SubscriptionPlansContent = ({ onSubscribe }: SubscriptionPlansProps) => {
     { id: "6months", labelKey: "sub.6months", discountKey: "sub.save20" },
   ];
 
-  const handleSubscribe = async () => {
-    if (!selectedPlan) return;
-    
+  const handleRedeem = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-promptpay-checkout", {
-        body: { plan: selectedPlan, duration: selectedDuration },
+      const { data, error } = await (supabase as any).rpc("redeem_subscription_with_coins", {
+        _plan: selectedPlan,
+        _duration: selectedDuration,
+        _currency: currency,
       });
-
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
+      if (data?.error) {
+        if (data.error === "insufficient_balance") {
+          toast.error(t("sub.insufficient"));
+        } else {
+          toast.error(t("sub.redeemError"));
+        }
+        return;
       }
+      toast.success(t("sub.redeemSuccess"));
+      await fetchBalances();
       onSubscribe?.(selectedPlan, selectedDuration);
-    } catch (error: any) {
-      console.error("Checkout error:", error);
-      toast.error(t("sub.checkoutError"));
+      // Refresh premium status
+      setTimeout(() => window.location.reload(), 800);
+    } catch (e) {
+      console.error(e);
+      toast.error(t("sub.redeemError"));
     } finally {
       setIsLoading(false);
     }
@@ -122,17 +146,19 @@ const SubscriptionPlansContent = ({ onSubscribe }: SubscriptionPlansProps) => {
             )}
             <div className={cn("mb-2", plan.color)}>{plan.icon}</div>
             <span className="font-semibold text-sm">{plan.name}</span>
-            <span className="text-lg font-bold mt-1">
-              ฿{plan.prices[selectedDuration]}
+            <span className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1">
+              {LEVEL_COIN_PRICES[plan.id][selectedDuration].toLocaleString()} LC ·{" "}
+              {STAR_COIN_PRICES[plan.id][selectedDuration].toLocaleString()}
+              <img src={starCoinDataUrl} alt="" className="w-3 h-3 inline-block" />
             </span>
           </button>
         ))}
       </div>
 
-      {/* Features List */}
+      {/* Features */}
       <div className="bg-muted/50 rounded-lg p-3">
         <ul className="space-y-1.5 text-sm">
-          {currentPlan?.featureKeys.map((key, i) => (
+          {currentPlan.featureKeys.map((key, i) => (
             <li key={i} className="flex items-center gap-2">
               <span className="text-emerald-500">✓</span>
               {t(key)}
@@ -147,7 +173,7 @@ const SubscriptionPlansContent = ({ onSubscribe }: SubscriptionPlansProps) => {
         </ul>
       </div>
 
-      {/* Duration Selection */}
+      {/* Duration */}
       <div className="space-y-2">
         <p className="text-sm font-medium">{t("sub.selectDuration")}</p>
         <div className="flex gap-2">
@@ -174,90 +200,96 @@ const SubscriptionPlansContent = ({ onSubscribe }: SubscriptionPlansProps) => {
         </div>
       </div>
 
-      {/* Payment Method - PromptPay only */}
+      {/* Currency toggle */}
       <div className="space-y-2">
-        <p className="text-sm font-medium">{t("sub.paymentMethod")}</p>
-        <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg border-2 border-primary bg-primary/5 text-sm font-medium justify-center">
-          <QrCode className="w-4 h-4" />
-          PromptPay QR
+        <p className="text-sm font-medium">{t("sub.payWith")}</p>
+        <div className="grid grid-cols-2 gap-2">
+          {(["level", "star"] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => setCurrency(c)}
+              className={cn(
+                "flex flex-col items-center gap-1 py-2.5 px-3 rounded-lg border-2 text-sm transition-all",
+                currency === c
+                  ? "border-primary bg-primary/5 font-medium"
+                  : "border-border hover:border-muted-foreground/50"
+              )}
+            >
+              <div className="flex items-center gap-1.5">
+                <img
+                  src={c === "level" ? levelCoinImg : starCoinDataUrl}
+                  className="w-4 h-4"
+                  alt=""
+                />
+                <span>{c === "level" ? t("sub.levelCoin") : t("sub.starCoin")}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {t("sub.yourBalance")}: {(c === "level" ? levelBalance : starBalance).toLocaleString()}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Subscribe Button */}
-      <Button
-        className={cn(
-          "w-full bg-gradient-to-r text-white",
-          currentPlan?.gradient || "from-primary to-primary"
-        )}
-        onClick={handleSubscribe}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <>
-            {currentPlan?.icon}
-            <span className="ml-2">
-              {t("sub.subscribe")} {currentPlan?.name} - ฿{currentPlan?.prices[selectedDuration]}
-            </span>
-          </>
-        )}
-      </Button>
+      {/* Price summary */}
+      <div className="bg-muted/50 rounded-lg p-3 flex justify-between items-center">
+        <span className="text-sm text-muted-foreground">{t("sub.redeem")}</span>
+        <span className="flex items-center gap-1.5 font-bold text-lg">
+          <img
+            src={currency === "level" ? levelCoinImg : starCoinDataUrl}
+            className="w-5 h-5"
+            alt=""
+          />
+          {price.toLocaleString()}
+        </span>
+      </div>
 
-      <p className="text-xs text-muted-foreground text-center">
-        {selectedPayment === "promptpay" ? t("sub.promptpayDesc") : t("sub.cardDesc")}
-      </p>
+      {/* CTA */}
+      {insufficient ? (
+        <div className="space-y-2">
+          <p className="text-xs text-destructive text-center">{t("sub.insufficient")}</p>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate(currency === "level" ? "/hope-coins" : "/star-coins")}
+          >
+            {currency === "level" ? t("sub.buyLevelCoin") : t("sub.earnStarCoin")}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          className={cn("w-full bg-gradient-to-r text-white", currentPlan.gradient)}
+          onClick={handleRedeem}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              {currentPlan.icon}
+              <span className="ml-2">
+                {t("sub.redeem")} · {price.toLocaleString()} {currency === "level" ? "LC" : "⭐"}
+              </span>
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 };
 
 const SubscriptionPlans = ({ onSubscribe }: SubscriptionPlansProps) => {
   const [open, setOpen] = useState(false);
-  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
-  const [isPromoUser, setIsPromoUser] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const { isPremium, planType, premiumUntil } = usePremiumStatus();
   const { t, language } = useLanguage();
 
-  useEffect(() => {
-    const checkPromoUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("code_redemptions")
-        .select("id")
-        .eq("user_id", user.id)
-        .limit(1);
-      if (data && data.length > 0) setIsPromoUser(true);
-    };
-    checkPromoUser();
-  }, []);
-
-  const handleManageSubscription = async () => {
-    setIsLoadingPortal(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
-      
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
-    } catch (error: any) {
-      console.error("Portal error:", error);
-      toast.error(t("sub.portalError"));
-    } finally {
-      setIsLoadingPortal(false);
-    }
-  };
-
-  // If user is already premium, show current status
   if (isPremium && premiumUntil) {
     const currentPlanConfig = plans.find((p) => p.id === planType);
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <div className={currentPlanConfig?.color}>
-            {currentPlanConfig?.icon}
-          </div>
+          <div className={currentPlanConfig?.color}>{currentPlanConfig?.icon}</div>
           <span className="font-semibold">{currentPlanConfig?.name || "Premium"}</span>
           <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full flex items-center gap-1">
             <Check className="w-3 h-3" />
@@ -267,7 +299,7 @@ const SubscriptionPlans = ({ onSubscribe }: SubscriptionPlansProps) => {
         <p className="text-sm text-muted-foreground">
           {t("sub.expiresAt")} {format(new Date(premiumUntil), "d MMM yyyy", { locale: getDateLocale(language) })}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
@@ -275,7 +307,7 @@ const SubscriptionPlans = ({ onSubscribe }: SubscriptionPlansProps) => {
                 {t("sub.managePlan")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Crown className="w-5 h-5 text-amber-500" />
@@ -285,30 +317,28 @@ const SubscriptionPlans = ({ onSubscribe }: SubscriptionPlansProps) => {
               <SubscriptionPlansContent onSubscribe={onSubscribe} />
             </DialogContent>
           </Dialog>
-          {!isPromoUser && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={handleManageSubscription}
-              disabled={isLoadingPortal}
-            >
-              {isLoadingPortal ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <Settings className="w-4 h-4" />
-                  {t("sub.manageSubscription")}
-                </>
-              )}
-            </Button>
-          )}
+          <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <HistoryIcon className="w-4 h-4" />
+                {t("subHistory.title")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <HistoryIcon className="w-5 h-5 text-primary" />
+                  {t("subHistory.title")}
+                </DialogTitle>
+              </DialogHeader>
+              <SubscriptionHistory />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     );
   }
 
-  // Non-premium: show subscribe button that opens dialog
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -318,7 +348,7 @@ const SubscriptionPlans = ({ onSubscribe }: SubscriptionPlansProps) => {
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crown className="w-5 h-5 text-amber-500" />

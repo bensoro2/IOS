@@ -117,9 +117,11 @@ const LEGACY_KEY_MAP: Record<string, string> = {
   boxing: "martial-arts",
   "muay-thai": "martial-arts",
   muaythai: "martial-arts",
+  esports: "gaming",
+  "e-sports": "gaming",
 };
 
-const normalizeSubCategoryId = (id: string): string => {
+export const normalizeSubCategoryId = (id: string): string => {
   const hyphenated = id.replace(/_/g, "-").toLowerCase();
   return LEGACY_KEY_MAP[hyphenated] ?? hyphenated;
 };
@@ -148,4 +150,17 @@ export const getCategoryBySubCategoryId = (subCategoryId: string): ActivityCateg
 // Get localized name helper
 export const getLocalizedName = (item: { name: string; names: Record<string, string> }, language: string): string => {
   return item.names[language] || item.names["en"] || item.name;
+};
+
+// Match a category/sub-category against a search query in ANY language
+// (Thai, English, JP, CN, KR, RU) plus its id and emoji.
+export const matchesActivityQuery = (
+  item: { id?: string; name: string; names: Record<string, string>; emoji?: string },
+  query: string
+): boolean => {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack: string[] = [item.name, item.emoji ?? "", (item.id ?? "").replace(/-/g, " ")];
+  Object.values(item.names || {}).forEach((n) => n && haystack.push(n));
+  return haystack.some((h) => h.toLowerCase().includes(q));
 };

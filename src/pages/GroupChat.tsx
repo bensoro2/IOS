@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { BUCKET_CHAT_MEDIA, CHAT_POLL_INTERVAL_MS, CHAT_POLL_MAX_MS, SCROLL_TO_BOTTOM_DELAY_MS } from "@/config/defaults";
+import { BUCKET_CHAT_MEDIA, CHAT_POLL_INTERVAL_MS, CHAT_POLL_MAX_MS, CHAT_POLL_REALTIME_MS, MESSAGES_LOAD_LIMIT, SCROLL_TO_BOTTOM_DELAY_MS } from "@/config/defaults";
  import GroupMembersDialog from "@/components/GroupMembersDialog";
 import { useGroupNotificationMute } from "@/hooks/useGroupNotificationMute";
 
@@ -203,6 +203,9 @@ const GroupChat = () => {
     let isActive = true;
     let pollTimeoutId: ReturnType<typeof setTimeout>;
     let pollInterval = CHAT_POLL_INTERVAL_MS;
+    let realtimeOk = false;
+    const nextDelay = () =>
+      realtimeOk ? CHAT_POLL_REALTIME_MS : pollInterval;
 
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -211,30 +214,39 @@ const GroupChat = () => {
         return;
       }
       setCurrentUserId(user.id);
-      const category = await fetchChatInfo();
-      await fetchMessages();
-      await checkTodayCheckin(user.id, category);
-      if (id) {
-        await markGroupChatAsRead(user.id, id);
-      }
+      // Chat info + messages in parallel: the message list no longer waits on metadata
+      const [category] = await Promise.all([fetchChatInfo(), fetchMessages()]);
       setIsLoading(false);
       setTimeout(() => scrollToBottom(true), SCROLL_TO_BOTTOM_DELAY_MS);
+
+      // Non-blocking follow-ups
+      checkTodayCheckin(user.id, category);
+      if (id) markGroupChatAsRead(user.id, id);
 
       // Start polling fallback
       if (isActive && id) startPolling();
     };
 
+
     const startPolling = () => {
       const poll = async () => {
         if (!isActive) return;
+        // Skip network work while the tab is in the background
+        if (typeof document !== "undefined" && document.hidden) {
+          pollTimeoutId = setTimeout(poll, CHAT_POLL_REALTIME_MS);
+          return;
+        }
         try {
-          const { data } = await supabase
+          const { data: rows } = await supabase
             .from("group_chat_messages")
             .select("*")
             .eq("group_chat_id", id)
-            .order("created_at", { ascending: true });
+            .order("created_at", { ascending: false })
+            .limit(MESSAGES_LOAD_LIMIT);
+          const data = (rows || []).slice().reverse();
 
           if (data && data.length > 0) {
+
             setMessages((prev) => {
               const prevIds = new Set(prev.filter(m => !m.id.startsWith("temp-")).map(m => m.id));
               const hasNew = data.some(m => !prevIds.has(m.id));
@@ -250,7 +262,7 @@ const GroupChat = () => {
                 d => d.user_id === m.user_id && d.content === m.content
               ));
 
-              const enriched: Message[] = data.map(msg => {
+              const enriched: Message[] = data.map((msg: any) => {
                 const existing = prev.find(p => p.id === msg.id);
                 const cached = userCacheRef.current.get(msg.user_id);
                 return {
@@ -272,9 +284,9 @@ const GroupChat = () => {
           console.error("Group poll error:", err);
           pollInterval = Math.min(pollInterval * 1.5, CHAT_POLL_MAX_MS);
         }
-        if (isActive) pollTimeoutId = setTimeout(poll, pollInterval);
+        if (isActive) pollTimeoutId = setTimeout(poll, nextDelay());
       };
-      pollTimeoutId = setTimeout(poll, pollInterval);
+      pollTimeoutId = setTimeout(poll, nextDelay());
     };
 
     init();
@@ -338,7 +350,10 @@ const GroupChat = () => {
             });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        realtimeOk = status === "SUBSCRIBED";
+        if (!realtimeOk) pollInterval = CHAT_POLL_INTERVAL_MS;
+      });
 
     // Listen for membership removal (kick)
     const memberChannel = supabase
@@ -416,26 +431,18 @@ const GroupChat = () => {
 
     setIsCheckingIn(true);
     try {
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
-      
-      // Get the category from activityInfo
-      const category = activityInfo?.category || null;
-      
-      const { error } = await supabase
-        .from("activity_checkins")
-        .insert({
-          user_id: currentUserId,
-          group_chat_id: id,
-          checked_in_at: today,
-          category: category,
-        });
+      const { data: result, error } = await (supabase as any).rpc("perform_activity_checkin", {
+        _group_chat_id: id,
+      });
 
-      if (error) {
-        if (error.code === '23505') {
+      if (error) throw error;
+
+      if (result?.error) {
+        if (result.error === "already_checked_in" || result.error === "category_already_checked_in") {
           toast.error(t("groupChat.alreadyCheckedIn"));
           setHasCheckedInToday(true);
         } else {
-          throw error;
+          toast.error(t("groupChat.checkinError"));
         }
       } else {
         toast.success(t("groupChat.checkinSuccess"), {
@@ -516,37 +523,47 @@ const GroupChat = () => {
 
   const fetchMessages = async () => {
     try {
+      // Load only the most recent page of messages (newest first, then flip)
       const { data, error } = await supabase
         .from("group_chat_messages")
         .select("*")
         .eq("group_chat_id", id)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(MESSAGES_LOAD_LIMIT);
 
       if (error) throw error;
 
-      // Enrich messages with user info
-      const enrichedMessages = await Promise.all(
-        (data || []).map(async (msg) => {
-          const { data: userData } = await supabase
-            .from("users")
-            .select("display_name, avatar_url")
-            .eq("id", msg.user_id)
-            .maybeSingle();
+      const rows = (data || []).slice().reverse();
 
-          if (userData) userCacheRef.current.set(msg.user_id, userData);
-          return {
-            ...msg,
-            user_display_name: userData?.display_name || t("common.unknownUser"),
-            user_avatar: userData?.avatar_url || undefined,
-          };
-        })
-      );
+      // Batch-fetch every author in a single query instead of one per message
+      const userIds = [...new Set(rows.map((m: any) => m.user_id))];
+      let userMap = new Map<string, { display_name: string | null; avatar_url: string | null }>();
+      if (userIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from("users")
+          .select("id, display_name, avatar_url")
+          .in("id", userIds);
+        (usersData || []).forEach((u: any) => {
+          userMap.set(u.id, u);
+          userCacheRef.current.set(u.id, u);
+        });
+      }
+
+      const enrichedMessages = rows.map((msg: any) => {
+        const userData = userMap.get(msg.user_id);
+        return {
+          ...msg,
+          user_display_name: userData?.display_name || t("common.unknownUser"),
+          user_avatar: userData?.avatar_url || undefined,
+        };
+      });
 
       setMessages(enrichedMessages as Message[]);
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
   };
+
 
   const uploadMedia = async (file: Blob, type: "image" | "audio"): Promise<string | null> => {
     if (!currentUserId) return null;
